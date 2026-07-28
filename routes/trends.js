@@ -1,5 +1,6 @@
 const express = require("express");
 const router = express.Router();
+const { refreshTrends } = require("../services/geminiTrends");
 
 const TIER_LIMITS = { free: 3, pro: Infinity, investor: Infinity };
 
@@ -48,6 +49,16 @@ router.post("/:id/watch", async (req, res) => {
   }
   await pool.query("INSERT INTO watchlist (user_id, trend_id) VALUES ($1, $2)", [user_id, id]);
   res.json({ watching: true });
+});
+
+router.post("/refresh", async (req, res) => {
+  const { pool } = req.app.locals;
+  try {
+    const result = await refreshTrends(pool, process.env.GEMINI_API_KEY);
+    res.json({ ok: true, ...result });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: err.message });
+  }
 });
 
 module.exports = router;
