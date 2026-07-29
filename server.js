@@ -1,5 +1,6 @@
 require("dotenv").config();
 const express = require("express");
+const cors = require("cors");
 const { Pool } = require("pg");
 const cron = require("node-cron");
 
@@ -10,6 +11,8 @@ const { refreshTrends } = require("./services/geminiTrends");
 const app = express();
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 app.locals.pool = pool;
+
+app.use(cors()); // allow the frontend (different domain) to call this API
 
 app.use("/api/billing/webhook", express.raw({ type: "application/json" }));
 app.use(express.json());
