@@ -57,6 +57,7 @@ router.post("/refresh", async (req, res) => {
     const result = await refreshTrends(pool, process.env.GEMINI_API_KEY);
     res.json({ ok: true, ...result });
   } catch (err) {
+    console.error("Refresh failed:", err.message);
     res.status(500).json({ ok: false, error: err.message });
   }
 });
