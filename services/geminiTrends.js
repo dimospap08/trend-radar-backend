@@ -1,9 +1,9 @@
 /**
  * Gemini trend discovery service
  * -----------------------------------------------------------------------
- * Asks Gemini (with Google Search grounding) to identify trends that are
- * currently gaining momentum across TikTok/social, e-commerce products,
- * and meme coins — then upserts them into the `trends` table.
+ * Asks Gemini to identify trends that are currently gaining momentum
+ * across TikTok/social, e-commerce products, and meme coins — then
+ * upserts them into the `trends` table.
  *
  * Runs on a schedule (hourly, see server.js) and can also be triggered
  * manually via POST /api/trends/refresh.
@@ -18,9 +18,9 @@ const PLATFORMS = ["TikTok", "Instagram Reels", "X", "YouTube Shorts", "Telegram
 const PROMPT = `You track emerging viral trends for a "trend radar" product used by
 TikTok creators, e-commerce sellers, marketers, and meme-coin traders.
 
-Using current, real information, list 15-20 things that are RIGHT NOW gaining
-fast momentum (not things that are already fully mainstream/saturated) across
-these categories: ${CATEGORIES.join(", ")}.
+List 15-20 plausible things that could be gaining fast momentum right now
+(not things that are already fully mainstream/saturated) across these
+categories: ${CATEGORIES.join(", ")}.
 
 For each item return:
 - name: short human-readable name
@@ -38,7 +38,8 @@ async function fetchTrendsFromGemini(apiKey) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       contents: [{ parts: [{ text: PROMPT }] }],
-      tools: [{ google_search: {} }],
+      // No Google Search grounding tool here — that requires a Google
+      // Cloud billing account. This works on the free Gemini API tier.
     }),
   });
 
