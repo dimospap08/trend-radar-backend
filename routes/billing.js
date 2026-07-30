@@ -37,27 +37,38 @@ router.post("/webhook", async (req, res) => {
     return res.status(400).send(`Webhook signature verification failed: ${err.message}`);
   }
 
-  switch (event.type) {
-    case "checkout.session.completed": {
-      const session = event.data.object;
-      const { user_id, tier } = session.metadata;
-      await pool.query(
-        `INSERT INTO subscriptions (user_id, stripe_customer_id, stripe_sub_id, tier, status)
-         VALUES ($1, $2, $3, $4, 'active')`,
-        [user_id, session.customer, session.subscription, tier]
-      );
-      break;
+  try {
+    switch (event.type) {
+      case "checkout.session.completed": {
+        const session = event.data.object;
+        const { user_id, tier } = session.metadata;
+        await pool.query(
+          `INSERT INTO subscriptions (user_id, stripe_customer_id, stripe_sub_id, tier, status)
+           VALUES ($1, $2, $3, $4, 'active')`,
+          [user_id, session.customer, session.subscription, tier]
+        );
+        break;
+      }
+      case "customer.subscription.deleted": {
+        const sub = event.data.object;
+        await pool.query(
+          `UPDATE subscriptions SET status = 'canceled' WHERE stripe_sub_id = $1`,
+          [sub.id]
+        );
+        break;
+      }
+      case "invoice.payment_failed": {
+        const invoice = event.data.object;
+        await pool.query(
+          `UPDATE subscriptions SET status = 'past_due' WHERE stripe_sub_id = $1`,
+          [invoice.subscription]
+        );
+        break;
+      }
     }
-    case "customer.subscription.deleted": {
-      const sub = event.data.object;
-      await pool.query(`UPDATE subscriptions SET status = 'canceled' WHERE stripe_sub_id = $1`, [sub.id]);
-      break;
-    }
-    case "invoice.payment_failed": {
-      const invoice = event.data.object;
-      await pool.query(`UPDATE subscriptions SET status = 'past_due' WHERE stripe_sub_id = $1`, [invoice.subscription]);
-      break;
-    }
+  } catch (err) {
+    console.error(`Webhook processing failed for ${event.type}:`, err.message);
+    return res.status(200).json({ received: true, processingError: err.message });
   }
 
   res.json({ received: true });
