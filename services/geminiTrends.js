@@ -1,24 +1,31 @@
 /**
  * Gemini trend discovery service
  * -----------------------------------------------------------------------
- * Asks Gemini to identify trends that are currently gaining momentum
- * across TikTok/social, e-commerce products, and meme coins — then
- * upserts them into the `trends` table.
- *
- * Runs on a schedule (hourly, see server.js) and can also be triggered
- * manually via POST /api/trends/refresh.
+ * Uses Vertex AI (service account auth) with Google Search grounding to
+ * find real-time trending topics — then upserts them into the `trends` table.
  */
+const fs = require("fs");
+const os = require("os");
+const path = require("path");
 const { GoogleGenAI } = require("@google/genai");
+
+// Write the service account JSON (from env var) to a temp file once,
+// and point Google's auth library at it.
+if (process.env.GOOGLE_CREDENTIALS_JSON && !process.env.GOOGLE_APPLICATION_CREDENTIALS) {
+  const credPath = path.join(os.tmpdir(), "gcp-key.json");
+  fs.writeFileSync(credPath, process.env.GOOGLE_CREDENTIALS_JSON);
+  process.env.GOOGLE_APPLICATION_CREDENTIALS = credPath;
+}
 
 const GEMINI_MODEL = "gemini-2.0-flash";
 const CATEGORIES = ["Sound", "Hashtag", "Format", "Product", "Aesthetic", "Coin", "Narrative"];
 const PLATFORMS = ["TikTok", "Instagram Reels", "X", "YouTube Shorts", "Telegram"];
 const PROMPT = `You track emerging viral trends for a "trend radar" product used by
 TikTok creators, e-commerce sellers, marketers, and meme-coin traders.
-List 15-20 plausible things that could be gaining fast momentum right now
-(not things that are already fully mainstream/saturated) across these
-categories: ${CATEGORIES.join(", ")}.
-For each item return:
+Use Google Search to find things that are ACTUALLY gaining fast momentum
+right now (not things that are already fully mainstream/saturated) across
+these categories: ${CATEGORIES.join(", ")}.
+List 15-20 of them. For each item return:
 - name: short human-readable name
 - category: one of ${CATEGORIES.join(", ")}
 - platform: one of ${PLATFORMS.join(", ")}
@@ -27,11 +34,18 @@ For each item return:
 Respond with ONLY a JSON array, no markdown, no commentary. Example shape:
 [{"name":"...", "category":"Sound", "platform":"TikTok", "velocity_pct":120, "first_seen_hours_ago":18}]`;
 
-async function fetchTrendsFromGemini(apiKey) {
-  const ai = new GoogleGenAI({ apiKey });
+async function fetchTrendsFromGemini() {
+  const ai = new GoogleGenAI({
+    vertexai: true,
+    project: process.env.GOOGLE_CLOUD_PROJECT,
+    location: process.env.GOOGLE_CLOUD_LOCATION || "us-central1",
+  });
   const response = await ai.models.generateContent({
     model: GEMINI_MODEL,
     contents: PROMPT,
+    config: {
+      tools: [{ googleSearch: {} }],
+    },
   });
   const text = response.text || "";
   const clean = text.replace(/```json|```/g, "").trim();
@@ -55,9 +69,10 @@ function buildSpark(velocity) {
   return points;
 }
 
-async function refreshTrends(pool, apiKey) {
-  if (!apiKey) throw new Error("GEMINI_API_KEY is not set");
-  const items = await fetchTrendsFromGemini(apiKey);
+// Note: the second `apiKey` argument is accepted but ignored now that
+// authentication happens via the GOOGLE_CREDENTIALS_JSON service account.
+async function refreshTrends(pool, _apiKey) {
+  const items = await fetchTrendsFromGemini();
   let upserted = 0;
   for (const item of items) {
     if (!item?.name || !CATEGORIES.includes(item.category)) continue;
