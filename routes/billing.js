@@ -18,8 +18,8 @@ router.post("/checkout", async (req, res) => {
     mode: "subscription",
     customer_email: email,
     line_items: [{ price: priceId, quantity: 1 }],
-    success_url: `${process.env.APP_URL}/billing/success?session_id={CHECKOUT_SESSION_ID}`,
-    cancel_url: `${process.env.APP_URL}/pricing`,
+    success_url: `${process.env.APP_URL}/?checkout=success&session_id={CHECKOUT_SESSION_ID}`,
+    cancel_url: `${process.env.APP_URL}/#pricing`,
     metadata: { user_id, tier },
   });
 
