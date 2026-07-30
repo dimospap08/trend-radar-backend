@@ -17,7 +17,7 @@ if (process.env.GOOGLE_CREDENTIALS_JSON && !process.env.GOOGLE_APPLICATION_CREDE
   process.env.GOOGLE_APPLICATION_CREDENTIALS = credPath;
 }
 
-const GEMINI_MODEL = "gemini-2.0-flash";
+const GEMINI_MODEL = "gemini-2.5-flash";
 const CATEGORIES = ["Sound", "Hashtag", "Format", "Product", "Aesthetic", "Coin", "Narrative"];
 const PLATFORMS = ["TikTok", "Instagram Reels", "X", "YouTube Shorts", "Telegram"];
 const PROMPT = `You track emerging viral trends for a "trend radar" product used by
