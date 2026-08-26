@@ -18,7 +18,7 @@ router.get("/", async (req, res) => {
   const categories = CATEGORY_BY_PERSONA[persona] || CATEGORY_BY_PERSONA.creator;
 
   const { rows } = await pool.query(
-    `SELECT id, name, category, platform, velocity_pct, score, first_seen_at, spark_data
+    `SELECT id, name, category, platform, velocity_pct, score, first_seen_at, spark_data, source_url, media_url, media_type
      FROM trends
      WHERE category = ANY($1)
      ORDER BY score DESC
