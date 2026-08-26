@@ -56,3 +56,6 @@ CREATE TABLE alerts (
   channel     TEXT NOT NULL DEFAULT 'email',
   sent_at     TIMESTAMPTZ
 );
+ALTER TABLE trends ADD COLUMN IF NOT EXISTS source_url TEXT;
+ALTER TABLE trends ADD COLUMN IF NOT EXISTS media_url TEXT;
+ALTER TABLE trends ADD COLUMN IF NOT EXISTS media_type TEXT DEFAULT 'image';
