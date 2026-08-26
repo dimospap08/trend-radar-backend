@@ -31,6 +31,9 @@ List 15-20 of them. For each item return:
 - platform: one of ${PLATFORMS.join(", ")}
 - velocity_pct: your best estimate of % growth over the last 48 hours (integer, realistic range 20-500)
 - first_seen_hours_ago: your best estimate of how many hours ago this started gaining traction (integer, 1-72)
+- source_url: the exact public webpage found by Google Search that supports this trend; use null if unavailable
+- media_url: a direct public image/video URL only if reliably available; otherwise null, never invent URLs
+- media_type: "image" or "video"
 Respond with ONLY a JSON array, no markdown, no commentary. Example shape:
 [{"name":"...", "category":"Sound", "platform":"TikTok", "velocity_pct":120, "first_seen_hours_ago":18}]`;
 
@@ -69,6 +72,13 @@ function buildSpark(velocity) {
   return points;
 }
 
+function safeUrl(value) {
+  try {
+    const url = new URL(String(value || ""));
+    return ["http:", "https:"].includes(url.protocol) ? url.toString() : null;
+  } catch (_) { return null; }
+}
+
 // Note: the second `apiKey` argument is accepted but ignored now that
 // authentication happens via the GOOGLE_CREDENTIALS_JSON service account.
 async function refreshTrends(pool, _apiKey) {
@@ -82,11 +92,14 @@ async function refreshTrends(pool, _apiKey) {
     const hoursAgo = Math.max(1, Math.min(72, Number(item.first_seen_hours_ago) || 24));
     const firstSeenAt = new Date(Date.now() - hoursAgo * 60 * 60 * 1000);
     const spark = buildSpark(velocity);
+    const sourceUrl = safeUrl(item.source_url);
+    const mediaUrl = safeUrl(item.media_url);
+    const mediaType = item.media_type === "video" ? "video" : "image";
     await pool.query(
-      `INSERT INTO trends (name, category, platform, velocity_pct, score, first_seen_at, spark_data)
-       VALUES ($1, $2, $3, $4, $5, $6, $7)
+      `INSERT INTO trends (name, category, platform, velocity_pct, score, first_seen_at, spark_data, source_url, media_url, media_type)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
        ON CONFLICT DO NOTHING`,
-      [item.name, item.category, platform, velocity, score, firstSeenAt, JSON.stringify(spark)]
+      [item.name, item.category, platform, velocity, score, firstSeenAt, JSON.stringify(spark), sourceUrl, mediaUrl, mediaType]
     );
     upserted++;
   }
