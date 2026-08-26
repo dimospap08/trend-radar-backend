@@ -37,8 +37,14 @@ CREATE TABLE trends (
   score         INT NOT NULL,
   first_seen_at TIMESTAMPTZ NOT NULL,
   last_updated  TIMESTAMPTZ NOT NULL DEFAULT now(),
-  spark_data    JSONB NOT NULL DEFAULT '[]'
+  spark_data    JSONB NOT NULL DEFAULT '[]',
+  source_url    TEXT,
+  media_url     TEXT,
+  media_type    TEXT NOT NULL DEFAULT 'image'
 );
+ALTER TABLE trends ADD COLUMN IF NOT EXISTS source_url TEXT;
+ALTER TABLE trends ADD COLUMN IF NOT EXISTS media_url TEXT;
+ALTER TABLE trends ADD COLUMN IF NOT EXISTS media_type TEXT NOT NULL DEFAULT 'image';
 CREATE INDEX idx_trends_score ON trends (score DESC);
 CREATE INDEX idx_trends_category ON trends (category);
 
@@ -56,6 +62,3 @@ CREATE TABLE alerts (
   channel     TEXT NOT NULL DEFAULT 'email',
   sent_at     TIMESTAMPTZ
 );
-ALTER TABLE trends ADD COLUMN IF NOT EXISTS source_url TEXT;
-ALTER TABLE trends ADD COLUMN IF NOT EXISTS media_url TEXT;
-ALTER TABLE trends ADD COLUMN IF NOT EXISTS media_type TEXT DEFAULT 'image';
