@@ -6,6 +6,7 @@ const cron = require("node-cron");
 
 const trendsRoutes = require("./routes/trends");
 const billingRoutes = require("./routes/billing");
+const sportsRoutes = require("./routes/sports");
 const { refreshTrends } = require("./services/geminiTrends");
 
 const app = express();
@@ -19,6 +20,7 @@ app.use(express.json());
 
 app.use("/api/trends", trendsRoutes);
 app.use("/api/billing", billingRoutes);
+app.use("/api/sports", sportsRoutes);
 
 app.get("/health", (req, res) => res.json({ ok: true }));
 
