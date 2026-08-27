@@ -34,8 +34,10 @@ List 15-20 of them. For each item return:
 - source_url: the exact public webpage found by Google Search that supports this trend; use null if unavailable
 - media_url: a direct public image/video URL only if reliably available; otherwise null, never invent URLs
 - media_type: "image" or "video"
+- description: one short sentence explaining what this is and why it matters now
+- source_url and media_url are required whenever Google Search finds a reliable public source; never invent either URL
 Respond with ONLY a JSON array, no markdown, no commentary. Example shape:
-[{"name":"...", "category":"Sound", "platform":"TikTok", "velocity_pct":120, "first_seen_hours_ago":18}]`;
+[{"name":"...", "category":"Sound", "platform":"TikTok", "velocity_pct":120, "first_seen_hours_ago":18, "source_url":"https://...", "media_url":"https://...", "media_type":"image", "description":"..."}]`;
 
 async function fetchTrendsFromGemini() {
   const ai = new GoogleGenAI({
