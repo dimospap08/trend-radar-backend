@@ -120,6 +120,7 @@ export default function TrendRadar() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [authMessage, setAuthMessage] = useState("");
+  const [alertMessage, setAlertMessage] = useState("");
 
   useEffect(() => {
     if (!supabase) return undefined;
@@ -198,6 +199,12 @@ export default function TrendRadar() {
       if (!response.ok) throw new Error(result.error || "Checkout is not configured yet.");
       window.location.href = result.url;
     } catch (error) { setAuthMode("signin"); setAuthMessage(error.message); }
+  };
+
+  const createAlert = async (trend) => {
+    if (!user) { setAuthMode("signin"); setAuthMessage("Sign in to create alerts."); return; }
+    const { error } = await supabase.from("alerts").insert({ user_id: user.id, trend_id: trend.id, channel: "email", threshold_score: Math.min(99, Number(trend.score) + 5) });
+    setAlertMessage(error ? "Could not create alert." : `Alert set for ${trend.name}.`);
   };
 
   const categories = CATEGORY_BY_PERSONA[persona];
@@ -336,6 +343,7 @@ export default function TrendRadar() {
                   </button>
                 </div>
                 <Sparkline data={t.spark} />
+                <button onClick={() => createAlert(t)} className="mt-3 text-[10px] mono text-[#9fc9b2] hover:text-[#39ff8f]">Set score alert +5</button>
                 <div className="flex items-center justify-between mt-2">
                   <span className="flex items-center gap-1 text-[#39ff8f] mono text-xs">
                     <TrendingUp className="w-3.5 h-3.5" /> +{t.velocity}% / 48h
@@ -360,6 +368,8 @@ export default function TrendRadar() {
           <p className="body-f text-sm text-[#9fc9b2] leading-relaxed">Creators find topics, stores spot demand, marketers time campaigns, and investors monitor narratives before they become obvious.</p>
         </div>
       </section>
+
+      {alertMessage && <div className="fixed bottom-5 right-5 z-40 rounded-lg border border-[#39ff8f] bg-[#0c2318] px-4 py-3 text-xs text-[#d8f5e4]">{alertMessage}</div>}
 
       {user && <section id="watchlist" className="max-w-6xl mx-auto px-6 pb-16">
         <div className="rounded-xl border border-[#123423] bg-[#081b12] p-6">
