@@ -68,12 +68,16 @@ async function persistFreeSignals(pool, fetcher = fetch) {
     );
     const scored = scoreSeries(history.rows.map((row) => ({ metric_value: row.metric_value, observed_at: row.observed_at })));
     const existing = await pool.query("SELECT id FROM trends WHERE name = $1 AND category = $2 AND platform = $3 LIMIT 1", [signal.name, signal.category, signal.platform]);
+    let trendId;
     if (existing.rowCount) {
-      await pool.query("UPDATE trends SET velocity_pct = $1, score = $2, spark_data = $3, last_updated = now(), source_url = $4 WHERE id = $5", [scored.velocity, scored.score, JSON.stringify(scored.spark), signal.source_url, existing.rows[0].id]);
+      trendId = existing.rows[0].id;
+      await pool.query("UPDATE trends SET velocity_pct = $1, score = $2, spark_data = $3, last_updated = now(), source_url = $4 WHERE id = $5", [scored.velocity, scored.score, JSON.stringify(scored.spark), signal.source_url, trendId]);
     } else {
-      await pool.query("INSERT INTO trends (name, category, platform, velocity_pct, score, first_seen_at, spark_data, source_url) VALUES ($1, $2, $3, $4, $5, now(), $6, $7)", [signal.name, signal.category, signal.platform, scored.velocity, scored.score, JSON.stringify(scored.spark), signal.source_url]);
+      const created = await pool.query("INSERT INTO trends (name, category, platform, velocity_pct, score, first_seen_at, spark_data, source_url) VALUES ($1, $2, $3, $4, $5, now(), $6, $7) RETURNING id", [signal.name, signal.category, signal.platform, scored.velocity, scored.score, JSON.stringify(scored.spark), signal.source_url]);
+      trendId = created.rows[0].id;
       inserted++;
     }
+    await pool.query("INSERT INTO trend_snapshots (trend_id, velocity, score) VALUES ($1, $2, $3)", [trendId, scored.velocity, scored.score]);
   }
   return { ...result, inserted, received: result.signals.length };
 }
