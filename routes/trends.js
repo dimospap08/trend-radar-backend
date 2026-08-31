@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const { refreshTrends } = require("../services/geminiTrends");
+const { persistFreeSignals } = require("../services/freeTrendSources");
 
 const TIER_LIMITS = { free: 3, pro: Infinity, investor: Infinity };
 
@@ -10,10 +11,10 @@ router.get("/", async (req, res) => {
   const tier = req.query.tier || "free";
 
   const CATEGORY_BY_PERSONA = {
-    creator: ["Sound", "Hashtag", "Format"],
-    store: ["Product", "Aesthetic", "Hashtag"],
-    marketer: ["Hashtag", "Format", "Aesthetic"],
-    investor: ["Coin", "Narrative"],
+    creator: ["Sound", "Hashtag", "Format", "Topic", "News"],
+    store: ["Product", "Aesthetic", "Hashtag", "Topic", "News"],
+    marketer: ["Hashtag", "Format", "Aesthetic", "Topic", "News"],
+    investor: ["Coin", "Narrative", "Topic", "News"],
   };
   const categories = CATEGORY_BY_PERSONA[persona] || CATEGORY_BY_PERSONA.creator;
 
@@ -27,9 +28,15 @@ router.get("/", async (req, res) => {
   );
 
   const limit = TIER_LIMITS[tier] ?? TIER_LIMITS.free;
-  const payload = rows.map((r, idx) => ({ ...r, locked: idx >= limit }));
+  const payload = rows.map((r, idx) => ({
+    ...r,
+    velocity: Number(r.velocity_pct),
+    spark: Array.isArray(r.spark_data) ? r.spark_data : [],
+    firstSeen: Math.max(0, Math.round((Date.now() - new Date(r.first_seen_at).getTime()) / 3600000)),
+    locked: idx >= limit,
+  }));
 
-  res.json({ persona, tier, trends: payload });
+  res.json({ persona, tier, updatedAt: new Date().toISOString(), sourceStatus: { database: "ok" }, trends: payload });
 });
 
 router.post("/:id/watch", async (req, res) => {
@@ -59,6 +66,17 @@ router.post("/refresh", async (req, res) => {
   } catch (err) {
     console.error("Refresh failed:", err.message);
     res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+router.post("/refresh-free", async (req, res) => {
+  const { pool } = req.app.locals;
+  try {
+    const result = await persistFreeSignals(pool);
+    res.json({ ok: true, ...result });
+  } catch (err) {
+    console.error("Free trend refresh failed:", err.message);
+    res.status(502).json({ ok: false, error: err.message });
   }
 });
 

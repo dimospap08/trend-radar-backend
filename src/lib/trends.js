@@ -20,7 +20,7 @@ export function parseGoogleTrendsRss(xml, country = "GR") {
     const link = clean(body.match(/<link>([\s\S]*?)<\/link>/i)?.[1]);
     const traffic = Number(clean(body.match(/<ht:approx_traffic>([\s\S]*?)<\/ht:approx_traffic>/i)?.[1]).replace(/[^0-9]/g, "")) || 0;
     return {
-      id: \`google-\${country}-\${index}\`,
+      id: "google-" + country + "-" + index,
       name, category: "Topic", platform: "Google", country,
       velocity: Math.min(999, traffic),
       score: Math.min(99, Math.max(1, Math.round(Math.log10(traffic + 10) * 18))),
@@ -50,7 +50,7 @@ export function parseGdeltTimeline(data) {
 export function dedupeTrends(trends) {
   const map = new Map();
   for (const trend of trends) {
-    const key = \`\${trend.name.toLowerCase()}|\${trend.country}|\${trend.category}\`;
+    const key = trend.name.toLowerCase() + "|" + trend.country + "|" + trend.category;
     const old = map.get(key);
     if (!old || trend.score > old.score) map.set(key, trend);
   }
@@ -62,13 +62,13 @@ export async function fetchLiveTrends(fetcher = fetch) {
   const trends = [];
   try {
     const response = await fetcher(GOOGLE_TRENDS_URL);
-    if (!response.ok) throw new Error(\`HTTP \${response.status}\`);
+    if (!response.ok) throw new Error("HTTP " + response.status);
     trends.push(...parseGoogleTrendsRss(await response.text()));
     sourceStatus.google = "ok";
   } catch (error) { sourceStatus.googleError = error.message; }
   try {
     const response = await fetcher(GDELT_URL);
-    if (!response.ok) throw new Error(\`HTTP \${response.status}\`);
+    if (!response.ok) throw new Error("HTTP " + response.status);
     trends.push(...parseGdeltTimeline(await response.json()));
     sourceStatus.gdelt = "ok";
   } catch (error) { sourceStatus.gdeltError = error.message; }

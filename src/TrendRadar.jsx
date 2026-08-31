@@ -169,7 +169,7 @@ export default function TrendRadar() {
   useEffect(() => {
     let active = true;
     fetch("/api/trends").then((response) => {
-      if (!response.ok) throw new Error(\`API HTTP \${response.status}\`);
+      if (!response.ok) throw new Error("API HTTP " + response.status);
       return response.json();
     }).then((result) => {
       if (!active) return;
@@ -369,7 +369,7 @@ export default function TrendRadar() {
       </section>
 
       <footer className="border-t border-[#123423] py-8 text-center">
-        <p className="mono text-[10px] text-[#3d6b52]">LIVE SOURCES · Google Trends RSS + GDELT · {sourceStatus ? \`\${sourceStatus.google}/\${sourceStatus.gdelt}\` : "loading"}</p>
+        <p className="mono text-[10px] text-[#3d6b52]">LIVE SOURCES · Google Trends RSS + GDELT · {sourceStatus ? sourceStatus.google + "/" + sourceStatus.gdelt : "loading"}</p>
       </footer>
     </div>
   );
