@@ -9,6 +9,7 @@ const billingRoutes = require("./routes/billing");
 const sportsRoutes = require("./routes/sports");
 const { refreshTrends } = require("./services/geminiTrends");
 const { persistFreeSignals } = require("./services/freeTrendSources");
+const { processAlerts } = require("./services/alerts");
 
 const app = express();
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
@@ -42,6 +43,8 @@ cron.schedule("*/30 * * * *", async () => {
   try {
     const result = await persistFreeSignals(pool);
     console.log("Free trend scan complete: received " + result.received + ", inserted " + result.inserted);
+    const alerts = await processAlerts(pool);
+    console.log("Alerts checked: " + alerts.checked + ", sent: " + alerts.sent);
   } catch (err) {
     console.error("Free trend scan failed:", err.message);
   }
