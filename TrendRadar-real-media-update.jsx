@@ -11,8 +11,8 @@ import {
 /* =========================================================
    SUPABASE (auth + trial)
    ========================================================= */
-const SUPABASE_URL = "https://kxxedfhxmcakfxmtneeq.supabase.co";
-const SUPABASE_ANON_KEY = "sb_publishable_PPIszEpxdZDsv2nqLQgL1Q_V5FOX-Qp";
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || "https://kxxedfhxmcakfxmtneeq.supabase.co";
+const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || "sb_publishable_PPIszEpxdZDsv2nqLQgL1Q_V5FOX-Qp";
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 const TRIAL_DAYS = 3;
 
@@ -78,7 +78,7 @@ function generateTrends() {
 }
 const ALL_TRENDS = generateTrends();
 
-const API_BASE = "https://trend-radar-backend-production.up.railway.app";
+const API_BASE = import.meta.env.VITE_API_URL || "https://trend-radar-backend-production.up.railway.app";
 
 function normalizeTrend(t) {
   const hoursAgo = t.first_seen_at
@@ -474,7 +474,9 @@ export default function TrendRadar() {
 
   useEffect(() => {
     let cancelled = false;
-    fetch(`${API_BASE}/api/trends?persona=${persona}&tier=pro`)
+    fetch(`${API_BASE}/api/trends?persona=${persona}&tier=pro`, {
+      headers: session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {},
+    })
       .then((r) => r.json())
       .then((data) => {
         if (cancelled) return;
@@ -484,7 +486,7 @@ export default function TrendRadar() {
       .catch(() => { if (!cancelled) setLiveTrends(null); })
       .finally(() => { if (!cancelled) setCheckingLive(false); });
     return () => { cancelled = true; };
-  }, [persona]);
+  }, [persona, session?.access_token]);
 
   useEffect(() => {
     try {
@@ -510,7 +512,9 @@ export default function TrendRadar() {
     setRefreshing(true);
     try {
       await fetch(`${API_BASE}/api/trends/refresh`, { method: "POST" });
-      const r = await fetch(`${API_BASE}/api/trends?persona=${persona}&tier=pro`);
+      const r = await fetch(`${API_BASE}/api/trends?persona=${persona}&tier=pro`, {
+        headers: session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {},
+      });
       const data = await r.json();
       if (data?.trends?.length > 0) setLiveTrends(data.trends.map(normalizeTrend));
     } catch (e) { /* backend unreachable */ }
@@ -544,7 +548,10 @@ export default function TrendRadar() {
     try {
       const res = await fetch(`${API_BASE}/api/billing/checkout`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
+        },
         body: JSON.stringify({ user_id: session?.user?.id || email, email, tier: planId }),
       });
       const data = await res.json();
