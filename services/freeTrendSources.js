@@ -6,13 +6,17 @@ function clean(value) {
   return String(value || "").replace(/<!\[CDATA\[|\]\]>/g, "").replace(/<[^>]+>/g, "").replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').trim();
 }
 
+function normalizeTrendName(value) {
+  return String(value || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^\p{L}\p{N}]+/gu, " ").trim().replace(/\s+/g, " ");
+}
+
 function parseGoogleRss(xml) {
   return [...String(xml).matchAll(/<item>([\s\S]*?)<\/item>/gi)].map((match) => {
     const body = match[1];
     const name = clean(body.match(/<title>([\s\S]*?)<\/title>/i)?.[1]);
     if (!name) return null;
     const traffic = Number(clean(body.match(/<ht:approx_traffic>([\s\S]*?)<\/ht:approx_traffic>/i)?.[1]).replace(/[^0-9]/g, "")) || 0;
-    return { source: "google", external_id: "google-gr-" + name.toLowerCase(), name, category: "Topic", platform: "Google", metric_value: traffic, source_url: GOOGLE_TRENDS_URL };
+    return { source: "google", external_id: "google-gr-" + normalizeTrendName(name), name, category: "Topic", platform: "Google", metric_value: traffic, source_url: GOOGLE_TRENDS_URL };
   }).filter(Boolean);
 }
 
