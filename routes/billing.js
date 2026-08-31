@@ -45,11 +45,16 @@ router.post("/webhook", async (req, res) => {
       case "checkout.session.completed": {
         const session = event.data.object;
         const { user_id, tier } = session.metadata;
-        await pool.query(
-          `INSERT INTO subscriptions (user_id, stripe_customer_id, stripe_sub_id, tier, status)
-           VALUES ($1, $2, $3, $4, 'active')`,
-          [user_id, session.customer, session.subscription, tier]
-        );
+        const existing = await pool.query("SELECT id FROM subscriptions WHERE stripe_sub_id = $1 ORDER BY created_at DESC LIMIT 1", [session.subscription]);
+        if (existing.rowCount) {
+          await pool.query("UPDATE subscriptions SET status = 'active', tier = $1, stripe_customer_id = $2 WHERE id = $3", [tier, session.customer, existing.rows[0].id]);
+        } else {
+          await pool.query(
+            `INSERT INTO subscriptions (user_id, stripe_customer_id, stripe_sub_id, tier, status)
+             VALUES ($1, $2, $3, $4, 'active')`,
+            [user_id, session.customer, session.subscription, tier]
+          );
+        }
         break;
       }
       case "customer.subscription.deleted": {
@@ -57,6 +62,15 @@ router.post("/webhook", async (req, res) => {
         await pool.query(
           `UPDATE subscriptions SET status = 'canceled' WHERE stripe_sub_id = $1`,
           [sub.id]
+        );
+        break;
+      }
+      case "customer.subscription.updated": {
+        const sub = event.data.object;
+        await pool.query(
+          `UPDATE subscriptions SET status = $1, current_period_end = to_timestamp($2)
+           WHERE stripe_sub_id = $3`,
+          [sub.status, sub.current_period_end, sub.id]
         );
         break;
       }
