@@ -19,12 +19,30 @@ npm run dev
 ```
 Opens at http://localhost:5173
 
-## What's mock vs real right now
-- Trend data: generated locally (fake, deterministic) — see `src/TrendRadar.jsx`.
+## Run the backend locally
+
+Create `.env.local` and set `DATABASE_URL` to the PostgreSQL connection string
+from the Supabase project. Keep this file private; it is ignored by Git.
+
+```bash
+npm run start:backend
+```
+
+The API runs at http://localhost:4000. Check it with:
+
+```text
+GET /health
+GET /api/trends?persona=creator&tier=pro
+POST /api/trends/refresh-free
+```
+
+## What's real vs not connected yet
+- Trend feed: loaded from Supabase, with Google Trends RSS and GDELT ingestion.
+- Radar and ticker: use the same live trend records shown in the feed.
 - Watchlist: saved in the browser's localStorage (real, but per-device only).
 - Pricing buttons: visual only, not wired to Stripe yet.
 
 Once the backend (see the other zip I sent you) is deployed, two edits turn
 this into a live product:
-1. Replace the local `ALL_TRENDS` array with a `fetch('/api/trends?...')` call.
+1. Add authenticated watchlist writes and user accounts.
 2. Point the pricing "Choose plan" button at `POST /api/billing/checkout`.

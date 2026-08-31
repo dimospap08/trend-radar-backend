@@ -6,7 +6,7 @@ import {
 } from "lucide-react";
 
 /* =========================================================
-   MOCK SIGNAL ENGINE
+   PERSONAS AND CATEGORIES
    ========================================================= */
 const PERSONAS = [
   { id: "creator", label: "Creator", icon: Video, tag: "TikTok / Shorts / Reels" },
@@ -22,49 +22,6 @@ const CATEGORY_BY_PERSONA = {
   investor: ["Coin", "Narrative", "Topic", "News"],
 };
 
-const NAME_POOL = {
-  Sound: ["\"Corridor\" slowed remix", "8-bit villain riff", "rainy lo-fi loop v2", "static-hum transition cue"],
-  Hashtag: ["#quietluxury2", "#deskbombing", "#feralgirlsummer3", "#cozycore.exe", "#glitchcore.tools"],
-  Format: ["POV: silent vlog", "3-second hook stitch", "\"rate my setup\" duet", "split-screen reaction"],
-  Product: ["mini heatless curler v2", "glass-skin serum stick", "LED desk fog lamp", "wearable neck-fan clip"],
-  Aesthetic: ["mob wife 2.0", "dopamine minimalism", "goblincore office", "liminal beige"],
-  Coin: ["$FROGWIF", "$STATIC", "$NANOCAT", "$GHOSTPEPE"],
-  Narrative: ["AI-agent memes", "retro-internet nostalgia", "sleep-deprived dev humor", "anti-hustle culture"],
-};
-const PLATFORMS = ["TikTok", "Instagram Reels", "X", "YouTube Shorts", "Telegram"];
-
-function seedRandom(seed) {
-  let s = seed;
-  return () => {
-    s = (s * 9301 + 49297) % 233280;
-    return s / 233280;
-  };
-}
-function generateTrends() {
-  const rand = seedRandom(42);
-  const out = [];
-  let id = 0;
-  Object.entries(NAME_POOL).forEach(([category, names]) => {
-    names.forEach((name) => {
-      id += 1;
-      const velocity = Math.round(20 + rand() * 780);
-      const spark = Array.from({ length: 12 }, (_, i) => {
-        const base = 10 + i * (velocity / 120);
-        return Math.max(2, Math.round(base + rand() * 15));
-      });
-      out.push({
-        id, name, category,
-        platform: PLATFORMS[Math.floor(rand() * PLATFORMS.length)],
-        velocity, spark,
-        firstSeen: Math.round(1 + rand() * 60),
-        score: Math.min(99, Math.round(velocity / 9 + rand() * 15)),
-      });
-    });
-  });
-  return out.sort((a, b) => b.score - a.score);
-}
-const DEMO_TRENDS = generateTrends();
-
 /* =========================================================
    VISUAL PRIMITIVES
    ========================================================= */
@@ -78,7 +35,7 @@ function Sparkline({ data, color = "#39ff8f" }) {
   );
 }
 
-function RadarSweep() {
+function RadarSweep({ trends }) {
   const [angle, setAngle] = useState(0);
   useEffect(() => {
     let raf, last = performance.now();
@@ -92,10 +49,10 @@ function RadarSweep() {
   }, []);
 
   const blips = useMemo(
-    () => DEMO_TRENDS.slice(0, 11).map((t, i) => ({
+    () => trends.slice(0, 11).map((t, i) => ({
       id: t.id, r: 16 + ((i * 34) % 80), theta: (i * 53) % 360, size: 3 + (t.score % 5),
     })),
-    []
+    [trends]
   );
 
   return (
@@ -133,8 +90,8 @@ function RadarSweep() {
   );
 }
 
-function SignalTicker() {
-  const items = useMemo(() => DEMO_TRENDS.slice(0, 14), []);
+function SignalTicker({ trends }) {
+  const items = useMemo(() => trends.slice(0, 14), [trends]);
   const line = items.map((t) => `${t.name} +${t.velocity}%`).join("   ///   ");
   return (
     <div className="border-y border-[#123423] bg-[#081b12] overflow-hidden py-2.5">
@@ -162,8 +119,6 @@ export default function TrendRadar() {
       const saved = localStorage.getItem("watchlist");
       if (saved) setWatchlist(new Set(JSON.parse(saved)));
     } catch (e) { /* nothing saved yet */ }
-    // TODO: once the backend is live, replace this with a fetch to
-    // GET /api/trends?persona=...&tier=... and load the user's real watchlist.
   }, []);
 
   useEffect(() => {
@@ -190,7 +145,6 @@ export default function TrendRadar() {
       const next = new Set(prev);
       next.has(id) ? next.delete(id) : next.add(id);
       localStorage.setItem("watchlist", JSON.stringify(Array.from(next)));
-      // TODO: also POST /api/trends/:id/watch { user_id } once backend is connected.
       return next;
     });
   };
@@ -262,10 +216,10 @@ export default function TrendRadar() {
             Start free <ArrowRight className="w-4 h-4" />
           </a>
         </div>
-        <RadarSweep />
+            <RadarSweep trends={visibleTrends} />
       </section>
 
-      <SignalTicker />
+      <SignalTicker trends={visibleTrends} />
 
       {/* HOW IT WORKS */}
       <section id="how" className="max-w-6xl mx-auto px-6 py-16">
