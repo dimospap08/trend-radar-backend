@@ -28,14 +28,20 @@ async function processAlerts(pool) {
      LIMIT 100`
   );
   let sent = 0;
+  let failed = 0;
   for (const alert of rows) {
-    const result = await sendEmailAlert({ to: alert.email, trendName: alert.name, score: alert.score, velocity: alert.velocity_pct });
-    if (result.sent) {
-      await pool.query("UPDATE alerts SET sent_at = now() WHERE id = $1", [alert.id]);
-      sent++;
+    try {
+      const result = await sendEmailAlert({ to: alert.email, trendName: alert.name, score: alert.score, velocity: alert.velocity_pct });
+      if (result.sent) {
+        await pool.query("UPDATE alerts SET sent_at = now() WHERE id = $1", [alert.id]);
+        sent++;
+      }
+    } catch (error) {
+      failed++;
+      console.error(`Alert ${alert.id} failed:`, error.message);
     }
   }
-  return { checked: rows.length, sent };
+  return { checked: rows.length, sent, failed };
 }
 
 module.exports = { processAlerts };
