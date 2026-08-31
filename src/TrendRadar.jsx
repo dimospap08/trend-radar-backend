@@ -184,6 +184,21 @@ export default function TrendRadar() {
     });
   };
 
+  const choosePlan = async (planId) => {
+    if (planId === "free") return setTier("free");
+    if (!user) { setAuthMode("signin"); setAuthMessage("Sign in before choosing a paid plan."); return; }
+    setAuthMessage("");
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || "http://localhost:4000"}/api/billing/checkout`, {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ user_id: user.id, email: user.email, tier: planId }),
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "Checkout is not configured yet.");
+      window.location.href = result.url;
+    } catch (error) { setAuthMode("signin"); setAuthMessage(error.message); }
+  };
+
   const categories = CATEGORY_BY_PERSONA[persona];
   const visibleTrends = trends.filter((t) => categories.includes(t.category));
   const freeLimit = 3;
@@ -344,7 +359,7 @@ export default function TrendRadar() {
           ].map((plan) => (
             <div
               key={plan.id}
-              onClick={() => setTier(plan.id)}
+              onClick={() => choosePlan(plan.id)}
               className={`cursor-pointer rounded-xl border p-6 transition relative ${
                 tier === plan.id ? "border-[#39ff8f] bg-[#0c2318]" : "border-[#123423] bg-[#081b12] hover:border-[#1c4b34]"
               }`}
@@ -364,7 +379,7 @@ export default function TrendRadar() {
               <button className={`mt-5 w-full py-2.5 rounded-lg text-sm font-semibold transition ${
                 tier === plan.id ? "bg-[#39ff8f] text-[#04120c]" : "bg-[#123423] text-[#d8f5e4] hover:bg-[#1c4b34]"
               }`}>
-                {tier === plan.id ? "Selected (demo)" : "Choose plan"}
+                {tier === plan.id && plan.id === "free" ? "Selected" : plan.id === "free" ? "Choose free" : "Subscribe"}
               </button>
             </div>
           ))}
