@@ -302,14 +302,9 @@ function SignalTicker() {
 }
 
 function GrainOverlay() {
-  return (
-    <svg className="fixed inset-0 w-full h-full pointer-events-none z-[1] opacity-[0.05] mix-blend-overlay">
-      <filter id="grain">
-        <feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="2" stitchTiles="stitch" />
-      </filter>
-      <rect width="100%" height="100%" filter="url(#grain)" />
-    </svg>
-  );
+  // The SVG noise filter renders too aggressively in some browsers.
+  // Keep the component as a safe no-op so the interface remains crisp.
+  return null;
 }
 
 const CATEGORY_VISUALS = [
