@@ -322,7 +322,7 @@ export default function TrendRadar() {
                   </span>
                   <span className="mono text-[10px] text-[#5fae82]">score {t.score}</span>
                 </div>
-                <p className="mono text-[10px] text-[#3d6b52] mt-1">source {t.platform} · updated {updatedAt ? new Date(updatedAt).toLocaleTimeString() : "..."}</p>
+                <p className="mono text-[10px] text-[#3d6b52] mt-1">source {t.platform} · updated {updatedAt ? new Date(updatedAt).toLocaleTimeString("en-US") : "..."}</p>
               </div>
             );
           })}
