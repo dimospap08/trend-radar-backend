@@ -369,7 +369,7 @@ export default function TrendRadar() {
       </section>
 
       <footer className="border-t border-[#123423] py-8 text-center">
-        <p className="mono text-[10px] text-[#3d6b52]">LIVE SOURCES · Google Trends RSS + GDELT · {sourceStatus ? sourceStatus.google + "/" + sourceStatus.gdelt : "loading"}</p>
+        <p className="mono text-[10px] text-[#3d6b52]">LIVE SOURCES · {sourceStatus ? (sourceStatus.google ? "Google " + sourceStatus.google + " · GDELT " + sourceStatus.gdelt : "Database " + sourceStatus.database) : "loading"}</p>
       </footer>
     </div>
   );
