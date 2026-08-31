@@ -7,9 +7,10 @@ const { requireUser } = require("../services/auth");
 const TIER_LIMITS = { free: 3, pro: Infinity, investor: Infinity };
 
 router.get("/", async (req, res) => {
-  const { pool } = req.app.locals;
-  const persona = req.query.persona || "creator";
-  const tier = req.query.tier || "free";
+  try {
+    const { pool } = req.app.locals;
+    const persona = req.query.persona || "creator";
+    const tier = req.query.tier || "free";
 
   const CATEGORY_BY_PERSONA = {
     creator: ["Sound", "Hashtag", "Format", "Topic", "News"],
@@ -50,7 +51,11 @@ router.get("/", async (req, res) => {
     locked: idx >= limit,
   }));
 
-  res.json({ persona, tier: effectiveTier, updatedAt: new Date().toISOString(), sourceStatus: { database: "ok" }, trends: payload });
+    res.json({ persona, tier: effectiveTier, updatedAt: new Date().toISOString(), sourceStatus: { database: "ok" }, trends: payload });
+  } catch (error) {
+    console.error("Trend feed failed:", error.message);
+    res.status(500).json({ ok: false, error: "Trend feed temporarily unavailable" });
+  }
 });
 
 router.get("/:id/history", async (req, res) => {
