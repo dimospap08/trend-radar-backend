@@ -27,6 +27,7 @@ const CATEGORY_BY_PERSONA = {
    VISUAL PRIMITIVES
    ========================================================= */
 function Sparkline({ data, color = "#39ff8f" }) {
+  if (!Array.isArray(data) || data.length < 2) return <div className="h-8 flex items-center mono text-[10px] text-[#3d6b52]">History is building...</div>;
   const max = Math.max(...data);
   const points = data.map((v, i) => `${(i / (data.length - 1)) * 100},${28 - (v / max) * 26}`).join(" ");
   return (
@@ -110,7 +111,7 @@ function SignalTicker({ trends }) {
 export default function TrendRadar() {
   const [persona, setPersona] = useState("creator");
   const [watchlist, setWatchlist] = useState(new Set());
-  const [tier, setTier] = useState("pro");
+  const [tier, setTier] = useState("free");
   const [trends, setTrends] = useState([]);
   const [sourceStatus, setSourceStatus] = useState(null);
   const [updatedAt, setUpdatedAt] = useState(null);
@@ -276,9 +277,10 @@ export default function TrendRadar() {
             })}
           </div>
           <p className="mono text-[11px] text-[#3d6b52] mb-8">{activePersona.tag}</p>
-          <a href="#pricing" className="inline-flex items-center gap-2 bg-[#39ff8f] text-[#04120c] px-5 py-3 rounded-lg font-semibold text-sm hover:bg-[#a8ffcf] transition">
+          <a href="#feed" className="inline-flex items-center gap-2 bg-[#39ff8f] text-[#04120c] px-5 py-3 rounded-lg font-semibold text-sm hover:bg-[#a8ffcf] transition">
             Start free <ArrowRight className="w-4 h-4" />
           </a>
+          <a href="#how" className="inline-flex items-center gap-2 ml-3 border border-[#1c4b34] px-5 py-3 rounded-lg font-semibold text-sm text-[#9fc9b2] hover:border-[#39ff8f] transition">See how it works</a>
         </div>
             <RadarSweep trends={visibleTrends} />
       </section>
@@ -344,6 +346,18 @@ export default function TrendRadar() {
               </div>
             );
           })}
+        </div>
+      </section>
+
+      <section className="max-w-6xl mx-auto px-6 pb-16 grid md:grid-cols-2 gap-4">
+        <div className="rounded-xl border border-[#123423] bg-[#081b12] p-6">
+          <p className="mono text-xs text-[#39ff8f] mb-3">WHY TRUST THE RADAR</p>
+          <p className="display font-semibold text-lg mb-2">Find movement before it becomes crowded.</p>
+          <p className="body-f text-sm text-[#9fc9b2] leading-relaxed">Trend Radar combines Google Trends and news coverage signals. It measures attention and momentum; it does not promise guaranteed results.</p>
+        </div>
+        <div className="rounded-xl border border-[#123423] bg-[#081b12] p-6">
+          <p className="mono text-xs text-[#39ff8f] mb-3">BUILT FOR ACTION</p>
+          <p className="body-f text-sm text-[#9fc9b2] leading-relaxed">Creators find topics, stores spot demand, marketers time campaigns, and investors monitor narratives before they become obvious.</p>
         </div>
       </section>
 
