@@ -61,18 +61,28 @@ export async function fetchLiveTrends(fetcher = fetch) {
   const sourceStatus = { google: "error", gdelt: "error" };
   const trends = [];
   try {
-    const response = await fetcher(GOOGLE_TRENDS_URL);
+    const response = await fetchWithTimeout(fetcher, GOOGLE_TRENDS_URL);
     if (!response.ok) throw new Error("HTTP " + response.status);
     trends.push(...parseGoogleTrendsRss(await response.text()));
     sourceStatus.google = "ok";
   } catch (error) { sourceStatus.googleError = error.message; }
   try {
-    const response = await fetcher(GDELT_URL);
+    const response = await fetchWithTimeout(fetcher, GDELT_URL);
     if (!response.ok) throw new Error("HTTP " + response.status);
     trends.push(...parseGdeltTimeline(await response.json()));
     sourceStatus.gdelt = "ok";
   } catch (error) { sourceStatus.gdeltError = error.message; }
   return { updatedAt: new Date().toISOString(), sourceStatus, trends: dedupeTrends(trends) };
+}
+
+async function fetchWithTimeout(fetcher, url, timeoutMs = 10000) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetcher(url, { signal: controller.signal });
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 export { GOOGLE_TRENDS_URL, GDELT_URL };
