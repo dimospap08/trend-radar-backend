@@ -51,7 +51,24 @@ router.get("/", async (req, res) => {
     locked: idx >= limit,
   }));
 
-    res.json({ persona, tier: effectiveTier, updatedAt: new Date().toISOString(), sourceStatus: { database: "ok" }, trends: payload });
+    const sourceRows = await pool.query(
+      `SELECT source, COUNT(*)::int AS count
+       FROM raw_signals
+       WHERE observed_at > now() - interval '2 hours'
+       GROUP BY source`
+    );
+    const recentSources = Object.fromEntries(sourceRows.rows.map((row) => [row.source, row.count]));
+    res.json({
+      persona,
+      tier: effectiveTier,
+      updatedAt: new Date().toISOString(),
+      sourceStatus: {
+        database: "ok",
+        google: recentSources.google > 0 ? "ok" : "stale",
+        gdelt: recentSources.gdelt > 0 ? "ok" : "stale",
+      },
+      trends: payload,
+    });
   } catch (error) {
     console.error("Trend feed failed:", error.message);
     res.status(500).json({ ok: false, error: "Trend feed temporarily unavailable" });
