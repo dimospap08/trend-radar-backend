@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const Stripe = require("stripe");
+const { requireUser } = require("../services/auth");
 
 const stripe = Stripe(process.env.STRIPE_SECRET_KEY);
 
@@ -9,8 +10,10 @@ const PRICE_IDS = {
   investor: process.env.STRIPE_PRICE_INVESTOR,
 };
 
-router.post("/checkout", async (req, res) => {
-  const { user_id, email, tier } = req.body;
+router.post("/checkout", requireUser, async (req, res) => {
+  const { tier } = req.body;
+  const user_id = req.user.id;
+  const email = req.user.email;
   const priceId = PRICE_IDS[tier];
   if (!priceId) return res.status(400).json({ error: "unknown tier" });
 

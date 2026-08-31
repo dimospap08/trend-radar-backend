@@ -191,9 +191,10 @@ export default function TrendRadar() {
     if (!user) { setAuthMode("signin"); setAuthMessage("Sign in before choosing a paid plan."); return; }
     setAuthMessage("");
     try {
+      const { data: sessionData } = await supabase.auth.getSession();
       const response = await fetch(`${import.meta.env.VITE_API_URL || "http://localhost:4000"}/api/billing/checkout`, {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ user_id: user.id, email: user.email, tier: planId }),
+        method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${sessionData.session?.access_token || ""}` },
+        body: JSON.stringify({ tier: planId }),
       });
       const result = await response.json();
       if (!response.ok) throw new Error(result.error || "Checkout is not configured yet.");
