@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { fetchLiveTrends, fetchStoredTrends } from "./lib/trends.js";
+import { fetchLiveTrends, fetchStoredTrends, fetchTrendHistory } from "./lib/trends.js";
 import { supabase } from "./lib/supabase.js";
 import {
   Radar, TrendingUp, Star, Zap, Users, ShoppingBag, Coins, Video,
@@ -49,6 +49,22 @@ function RadarSweep({ trends }) {
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
   }, []);
+
+  useEffect(() => {
+    if (!trends.length) return;
+    let active = true;
+    Promise.all(trends.slice(0, 30).map(async (trend) => {
+      try {
+        const history = await fetchTrendHistory(trend.id);
+        return history.length >= 2 ? { id: trend.id, spark: history } : null;
+      } catch { return null; }
+    })).then((updates) => {
+      if (!active) return;
+      const byId = new Map(updates.filter(Boolean).map((item) => [String(item.id), item.spark]));
+      if (byId.size) setTrends((current) => current.map((trend) => ({ ...trend, spark: byId.get(String(trend.id)) || trend.spark })));
+    });
+    return () => { active = false; };
+  }, [trends.length]);
 
   const blips = useMemo(
     () => trends.slice(0, 11).map((t, i) => ({

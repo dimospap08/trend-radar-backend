@@ -44,5 +44,5 @@ POST /api/trends/refresh-free
 
 Once the backend (see the other zip I sent you) is deployed, two edits turn
 this into a live product:
-1. Add authenticated watchlist writes and user accounts.
+1. Add richer authenticated account settings and notification preferences.
 2. Point the pricing "Choose plan" button at `POST /api/billing/checkout`.

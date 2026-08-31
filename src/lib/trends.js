@@ -107,6 +107,14 @@ export async function fetchStoredTrends(fetcher = fetch) {
   };
 }
 
+export async function fetchTrendHistory(trendId, fetcher = fetch) {
+  const base = import.meta.env.VITE_API_URL || "";
+  const response = await fetcher(`${base}/api/trends/${trendId}/history`);
+  if (!response.ok) throw new Error("History HTTP " + response.status);
+  const data = await response.json();
+  return (data.history || []).map((point) => Number(point.score)).filter(Number.isFinite);
+}
+
 async function fetchWithTimeout(fetcher, url, timeoutMs = 10000) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
