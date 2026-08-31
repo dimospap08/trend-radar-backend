@@ -55,6 +55,12 @@ CREATE TABLE watchlist (
   PRIMARY KEY (user_id, trend_id)
 );
 
+ALTER TABLE watchlist ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users manage own watchlist" ON watchlist
+  FOR ALL TO authenticated
+  USING (auth.uid() = user_id)
+  WITH CHECK (auth.uid() = user_id);
+
 CREATE TABLE alerts (
   id          BIGSERIAL PRIMARY KEY,
   user_id     UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
