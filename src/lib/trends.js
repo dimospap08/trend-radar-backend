@@ -75,6 +75,28 @@ export async function fetchLiveTrends(fetcher = fetch) {
   return { updatedAt: new Date().toISOString(), sourceStatus, trends: dedupeTrends(trends) };
 }
 
+export async function fetchStoredTrends(fetcher = fetch) {
+  const baseUrl = import.meta.env.VITE_SUPABASE_URL;
+  const key = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+  if (!baseUrl || !key) return null;
+  const response = await fetcher(baseUrl + "/rest/v1/trends?select=id,name,category,platform,velocity_pct,score,first_seen_at,last_updated,spark_data,source_url&order=score.desc&limit=100", {
+    headers: { apikey: key, Authorization: "Bearer " + key },
+  });
+  if (!response.ok) throw new Error("Supabase HTTP " + response.status);
+  const rows = await response.json();
+  return {
+    updatedAt: new Date().toISOString(),
+    sourceStatus: { database: "ok" },
+    trends: rows.map((row) => ({
+      ...row,
+      velocity: Number(row.velocity_pct),
+      spark: Array.isArray(row.spark_data) ? row.spark_data : [],
+      firstSeen: Math.max(0, Math.round((Date.now() - new Date(row.first_seen_at).getTime()) / 3600000)),
+      sourceUrl: row.source_url,
+    })),
+  };
+}
+
 async function fetchWithTimeout(fetcher, url, timeoutMs = 10000) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);

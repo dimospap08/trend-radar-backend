@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { fetchLiveTrends } from "./lib/trends.js";
+import { fetchLiveTrends, fetchStoredTrends } from "./lib/trends.js";
 import {
   Radar, TrendingUp, Star, Zap, Users, ShoppingBag, Coins, Video,
   Check, Activity, Bell, ArrowRight, Gauge, Sparkles, Lock,
@@ -168,10 +168,10 @@ export default function TrendRadar() {
 
   useEffect(() => {
     let active = true;
-    fetch("/api/trends").then((response) => {
+    fetchStoredTrends().then((stored) => stored || fetch("/api/trends").then((response) => {
       if (!response.ok) throw new Error("API HTTP " + response.status);
       return response.json();
-    }).then((result) => {
+    })).then((result) => {
       if (!active) return;
       setTrends(result.trends);
       setSourceStatus(result.sourceStatus);
