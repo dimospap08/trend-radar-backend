@@ -33,18 +33,28 @@ function parseGdelt(data) {
 async function fetchFreeSignals(fetcher = fetch) {
   const result = { signals: [], sourceStatus: { google: "error", gdelt: "error" } };
   try {
-    const response = await fetcher(GOOGLE_TRENDS_URL);
+    const response = await fetchWithTimeout(fetcher, GOOGLE_TRENDS_URL);
     if (!response.ok) throw new Error("HTTP " + response.status);
     result.signals.push(...parseGoogleRss(await response.text()));
     result.sourceStatus.google = "ok";
   } catch (error) { result.sourceStatus.googleError = error.message; }
   try {
-    const response = await fetcher(GDELT_URL);
+    const response = await fetchWithTimeout(fetcher, GDELT_URL);
     if (!response.ok) throw new Error("HTTP " + response.status);
     result.signals.push(...parseGdelt(await response.json()));
     result.sourceStatus.gdelt = "ok";
   } catch (error) { result.sourceStatus.gdeltError = error.message; }
   return result;
+}
+
+async function fetchWithTimeout(fetcher, url, timeoutMs = 10000) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetcher(url, { signal: controller.signal });
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 async function persistFreeSignals(pool, fetcher = fetch) {
