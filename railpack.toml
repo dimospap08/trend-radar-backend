@@ -1,0 +1,8 @@
+[build]
+# This is a Node backend, not a static frontend.
+# Skip npm run build and run the server directly.
+build = false
+
+[run]
+# Use the start:backend script which runs: node server.js
+start = "node server.js"
