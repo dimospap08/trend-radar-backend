@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 const { refreshTrends } = require("../services/geminiTrends");
 const { persistFreeSignals } = require("../services/freeTrendSources");
+const { requireUser } = require("../services/auth");
 
 const TIER_LIMITS = { free: 3, pro: Infinity, investor: Infinity };
 
@@ -27,7 +28,20 @@ router.get("/", async (req, res) => {
     [categories]
   );
 
-  const limit = TIER_LIMITS[tier] ?? TIER_LIMITS.free;
+  let effectiveTier = "free";
+  if (tier !== "free") {
+    const token = req.headers.authorization?.replace(/^Bearer\s+/i, "");
+    if (token && process.env.SUPABASE_URL && process.env.SUPABASE_PUBLISHABLE_KEY) {
+      const { createClient } = require("@supabase/supabase-js");
+      const authClient = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_PUBLISHABLE_KEY);
+      const { data } = await authClient.auth.getUser(token);
+      if (data.user) {
+        const subscription = await pool.query("SELECT tier FROM subscriptions WHERE user_id = $1 AND status = 'active' ORDER BY created_at DESC LIMIT 1", [data.user.id]);
+        effectiveTier = subscription.rows[0]?.tier || "free";
+      }
+    }
+  }
+  const limit = TIER_LIMITS[effectiveTier] ?? TIER_LIMITS.free;
   const payload = rows.map((r, idx) => ({
     ...r,
     velocity: Number(r.velocity_pct),
@@ -36,7 +50,7 @@ router.get("/", async (req, res) => {
     locked: idx >= limit,
   }));
 
-  res.json({ persona, tier, updatedAt: new Date().toISOString(), sourceStatus: { database: "ok" }, trends: payload });
+  res.json({ persona, tier: effectiveTier, updatedAt: new Date().toISOString(), sourceStatus: { database: "ok" }, trends: payload });
 });
 
 router.get("/:id/history", async (req, res) => {
@@ -51,11 +65,10 @@ router.get("/:id/history", async (req, res) => {
   res.json({ trend_id: req.params.id, history: rows });
 });
 
-router.post("/:id/watch", async (req, res) => {
+router.post("/:id/watch", requireUser, async (req, res) => {
   const { pool } = req.app.locals;
   const { id } = req.params;
-  const { user_id } = req.body;
-  if (!user_id) return res.status(400).json({ error: "user_id required" });
+  const user_id = req.user.id;
 
   const existing = await pool.query(
     "SELECT 1 FROM watchlist WHERE user_id = $1 AND trend_id = $2",
