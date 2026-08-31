@@ -39,6 +39,19 @@ router.get("/", async (req, res) => {
   res.json({ persona, tier, updatedAt: new Date().toISOString(), sourceStatus: { database: "ok" }, trends: payload });
 });
 
+router.get("/:id/history", async (req, res) => {
+  const { pool } = req.app.locals;
+  const { rows } = await pool.query(
+    `SELECT rs.metric_value, rs.observed_at
+     FROM raw_signals rs
+     JOIN trends t ON t.name = rs.name AND t.category = rs.category
+     WHERE t.id = $1
+     ORDER BY rs.observed_at ASC`,
+    [req.params.id]
+  );
+  res.json({ trend_id: req.params.id, history: rows });
+});
+
 router.post("/:id/watch", async (req, res) => {
   const { pool } = req.app.locals;
   const { id } = req.params;

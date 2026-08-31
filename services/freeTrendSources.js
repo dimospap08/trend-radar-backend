@@ -1,5 +1,6 @@
 const GOOGLE_TRENDS_URL = "https://trends.google.com/trending/rss?geo=GR";
 const GDELT_URL = "https://api.gdeltproject.org/api/v2/doc/doc?query=technology&mode=timelinevol&format=json&timespan=7d";
+const { scoreSeries } = require("./scoring");
 
 function clean(value) {
   return String(value || "").replace(/<!\[CDATA\[|\]\]>/g, "").replace(/<[^>]+>/g, "").replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').trim();
@@ -47,11 +48,16 @@ async function persistFreeSignals(pool, fetcher = fetch) {
   let inserted = 0;
   for (const signal of result.signals) {
     await pool.query("INSERT INTO raw_signals (source, external_id, name, category, metric_value) VALUES ($1, $2, $3, $4, $5)", [signal.source, signal.external_id, signal.name, signal.category, signal.metric_value]);
+    const history = await pool.query(
+      "SELECT metric_value, observed_at FROM raw_signals WHERE source = $1 AND external_id = $2 ORDER BY observed_at ASC",
+      [signal.source, signal.external_id]
+    );
+    const scored = scoreSeries(history.rows.map((row) => ({ metric_value: row.metric_value, observed_at: row.observed_at })));
     const existing = await pool.query("SELECT id FROM trends WHERE name = $1 AND category = $2 AND platform = $3 LIMIT 1", [signal.name, signal.category, signal.platform]);
     if (existing.rowCount) {
-      await pool.query("UPDATE trends SET velocity_pct = $1, last_updated = now(), source_url = $2 WHERE id = $3", [signal.metric_value, signal.source_url, existing.rows[0].id]);
+      await pool.query("UPDATE trends SET velocity_pct = $1, score = $2, spark_data = $3, last_updated = now(), source_url = $4 WHERE id = $5", [scored.velocity, scored.score, JSON.stringify(scored.spark), signal.source_url, existing.rows[0].id]);
     } else {
-      await pool.query("INSERT INTO trends (name, category, platform, velocity_pct, score, first_seen_at, spark_data, source_url) VALUES ($1, $2, $3, $4, $5, now(), $6, $7)", [signal.name, signal.category, signal.platform, signal.metric_value, Math.min(99, Math.max(1, Math.round(signal.metric_value / 10))), JSON.stringify([signal.metric_value]), signal.source_url]);
+      await pool.query("INSERT INTO trends (name, category, platform, velocity_pct, score, first_seen_at, spark_data, source_url) VALUES ($1, $2, $3, $4, $5, now(), $6, $7)", [signal.name, signal.category, signal.platform, scored.velocity, scored.score, JSON.stringify(scored.spark), signal.source_url]);
       inserted++;
     }
   }
