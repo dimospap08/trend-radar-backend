@@ -361,6 +361,16 @@ export default function TrendRadar() {
         </div>
       </section>
 
+      {user && <section id="watchlist" className="max-w-6xl mx-auto px-6 pb-16">
+        <div className="rounded-xl border border-[#123423] bg-[#081b12] p-6">
+          <div className="flex items-baseline justify-between mb-3"><h2 className="display text-xl font-bold">My Watchlist</h2><span className="mono text-xs text-[#5fae82]">{watchlist.size} saved</span></div>
+          <div className="flex flex-wrap gap-2">
+            {trends.filter((trend) => watchlist.has(trend.id)).map((trend) => <button key={trend.id} onClick={() => toggleWatch(trend.id)} className="rounded-full border border-[#1c4b34] px-3 py-1.5 text-xs text-[#9fc9b2] hover:border-[#39ff8f]">{trend.name} ×</button>)}
+            {!watchlist.size && <p className="text-sm text-[#5fae82]">Save a trend with the star to see it here.</p>}
+          </div>
+        </div>
+      </section>}
+
       {/* PRICING */}
       <section id="pricing" className="max-w-6xl mx-auto px-6 pb-20">
         <h2 className="display text-2xl font-bold mb-2">Plans</h2>
