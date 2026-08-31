@@ -42,11 +42,10 @@ router.get("/", async (req, res) => {
 router.get("/:id/history", async (req, res) => {
   const { pool } = req.app.locals;
   const { rows } = await pool.query(
-    `SELECT rs.metric_value, rs.observed_at
-     FROM raw_signals rs
-     JOIN trends t ON t.name = rs.name AND t.category = rs.category
-     WHERE t.id = $1
-     ORDER BY rs.observed_at ASC`,
+    `SELECT measured_at, velocity, score
+     FROM trend_snapshots
+     WHERE trend_id = $1
+     ORDER BY measured_at ASC`,
     [req.params.id]
   );
   res.json({ trend_id: req.params.id, history: rows });
