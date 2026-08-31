@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { fetchLiveTrends, fetchStoredTrends } from "./lib/trends.js";
+import { supabase } from "./lib/supabase.js";
 import {
   Radar, TrendingUp, Star, Zap, Users, ShoppingBag, Coins, Video,
   Check, Activity, Bell, ArrowRight, Gauge, Sparkles, Lock,
@@ -113,6 +114,18 @@ export default function TrendRadar() {
   const [trends, setTrends] = useState([]);
   const [sourceStatus, setSourceStatus] = useState(null);
   const [updatedAt, setUpdatedAt] = useState(null);
+  const [user, setUser] = useState(null);
+  const [authMode, setAuthMode] = useState(null);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [authMessage, setAuthMessage] = useState("");
+
+  useEffect(() => {
+    if (!supabase) return undefined;
+    supabase.auth.getUser().then(({ data }) => setUser(data.user || null));
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => setUser(session?.user || null));
+    return () => listener.subscription.unsubscribe();
+  }, []);
 
   useEffect(() => {
     try {
@@ -120,6 +133,25 @@ export default function TrendRadar() {
       if (saved) setWatchlist(new Set(JSON.parse(saved)));
     } catch (e) { /* nothing saved yet */ }
   }, []);
+
+  useEffect(() => {
+    if (!supabase || !user) return;
+    supabase.from("watchlist").select("trend_id").eq("user_id", user.id).then(({ data }) => {
+      if (data) setWatchlist(new Set(data.map((row) => row.trend_id)));
+    });
+  }, [user]);
+
+  const submitAuth = async (event) => {
+    event.preventDefault();
+    setAuthMessage("");
+    if (!supabase) return setAuthMessage("Supabase is not configured.");
+    const result = authMode === "signup"
+      ? await supabase.auth.signUp({ email, password })
+      : await supabase.auth.signInWithPassword({ email, password });
+    if (result.error) return setAuthMessage(result.error.message);
+    setAuthMessage(authMode === "signup" ? "Check your email to confirm your account." : "Signed in.");
+    if (authMode === "signin") setAuthMode(null);
+  };
 
   useEffect(() => {
     let active = true;
@@ -141,10 +173,13 @@ export default function TrendRadar() {
   }, []);
 
   const toggleWatch = (id) => {
+    if (!user) { setAuthMode("signin"); setAuthMessage("Sign in to save your watchlist."); return; }
     setWatchlist((prev) => {
       const next = new Set(prev);
       next.has(id) ? next.delete(id) : next.add(id);
       localStorage.setItem("watchlist", JSON.stringify(Array.from(next)));
+      supabase.from("watchlist").upsert({ user_id: user.id, trend_id: id }, { onConflict: "user_id,trend_id" })
+        .then(() => { if (!next.has(id)) return supabase.from("watchlist").delete().eq("user_id", user.id).eq("trend_id", id); });
       return next;
     });
   };
@@ -180,8 +215,22 @@ export default function TrendRadar() {
             <Activity className="w-3.5 h-3.5 animate-pulse" />
             {trends.length} SIGNALS LIVE
           </div>
+          <div className="flex items-center gap-2 ml-4">
+            {user ? <button onClick={() => supabase.auth.signOut()} className="mono text-[10px] text-[#9fc9b2]">Sign out</button> : <button onClick={() => setAuthMode("signin")} className="mono text-[10px] text-[#39ff8f]">Sign in</button>}
+          </div>
         </div>
       </header>
+
+      {authMode && <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-6">
+        <form onSubmit={submitAuth} className="w-full max-w-sm rounded-xl border border-[#1c4b34] bg-[#081b12] p-6">
+          <div className="flex justify-between items-center mb-5"><h2 className="display font-bold">{authMode === "signup" ? "Create account" : "Sign in"}</h2><button type="button" onClick={() => setAuthMode(null)} className="text-[#9fc9b2]">×</button></div>
+          <input required type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email" className="w-full mb-3 rounded-lg bg-[#04120c] border border-[#123423] p-3 text-sm" />
+          <input required minLength="6" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Password (6+ characters)" className="w-full mb-4 rounded-lg bg-[#04120c] border border-[#123423] p-3 text-sm" />
+          {authMessage && <p className="text-xs text-[#ffcf70] mb-3">{authMessage}</p>}
+          <button className="w-full rounded-lg bg-[#39ff8f] text-[#04120c] py-2.5 font-semibold">{authMode === "signup" ? "Create account" : "Sign in"}</button>
+          <button type="button" onClick={() => { setAuthMode(authMode === "signup" ? "signin" : "signup"); setAuthMessage(""); }} className="w-full mt-3 text-xs text-[#9fc9b2]">{authMode === "signup" ? "Already have an account? Sign in" : "Need an account? Sign up"}</button>
+        </form>
+      </div>}
 
       {/* HERO */}
       <section className="max-w-6xl mx-auto px-6 pt-16 pb-14 grid md:grid-cols-2 gap-10 items-center">
