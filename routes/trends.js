@@ -26,7 +26,7 @@ router.get("/", async (req, res) => {
       const authClient = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_PUBLISHABLE_KEY);
       const { data } = await authClient.auth.getUser(token);
       if (data.user) {
-        const subscription = await pool.query("SELECT tier FROM subscriptions WHERE user_id = $1 AND status = 'active' ORDER BY created_at DESC LIMIT 1", [data.user.id]);
+        const subscription = await pool.query("SELECT tier FROM subscriptions WHERE user_id = $1 AND status = 'active' ORDER BY (tier = 'investor') DESC, created_at DESC LIMIT 1", [data.user.id]);
         effectiveTier = subscription.rows[0]?.tier || "free";
       }
     }
