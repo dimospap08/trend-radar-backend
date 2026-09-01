@@ -11,25 +11,14 @@ router.get("/", async (req, res) => {
     const { pool } = req.app.locals;
     const persona = req.query.persona || "creator";
     const tier = req.query.tier || "free";
+    const CATEGORY_BY_PERSONA = {
+      creator: ["Sound", "Hashtag", "Format", "Topic", "News"],
+      store: ["Product", "Aesthetic", "Hashtag", "Topic", "News"],
+      marketer: ["Hashtag", "Format", "Aesthetic", "Topic", "News"],
+      investor: ["Coin", "Narrative", "Topic", "News"],
+    };
 
-  const CATEGORY_BY_PERSONA = {
-    creator: ["Sound", "Hashtag", "Format", "Topic", "News"],
-    store: ["Product", "Aesthetic", "Hashtag", "Topic", "News"],
-    marketer: ["Hashtag", "Format", "Aesthetic", "Topic", "News"],
-    investor: ["Coin", "Narrative", "Topic", "News"],
-  };
-  const categories = CATEGORY_BY_PERSONA[persona] || CATEGORY_BY_PERSONA.creator;
-
-  const { rows } = await pool.query(
-    `SELECT id, name, category, platform, velocity_pct, score, first_seen_at, spark_data, source_url, media_url, media_type
-     FROM trends
-     WHERE category = ANY($1)
-     ORDER BY score DESC
-     LIMIT 100`,
-    [categories]
-  );
-
-  let effectiveTier = "free";
+    let effectiveTier = "free";
   if (tier !== "free") {
     const token = req.headers.authorization?.replace(/^Bearer\s+/i, "");
     if (token && process.env.SUPABASE_URL && process.env.SUPABASE_PUBLISHABLE_KEY) {
@@ -42,7 +31,19 @@ router.get("/", async (req, res) => {
       }
     }
   }
-  const limit = TIER_LIMITS[effectiveTier] ?? TIER_LIMITS.free;
+    const categories = ["pro", "investor"].includes(effectiveTier)
+      ? ["Sound", "Hashtag", "Format", "Product", "Aesthetic", "Coin", "Narrative", "Topic", "News"]
+      : (CATEGORY_BY_PERSONA[persona] || CATEGORY_BY_PERSONA.creator);
+    const { rows } = await pool.query(
+      `SELECT id, name, category, platform, velocity_pct, score, first_seen_at, spark_data, source_url, media_url, media_type
+       FROM trends
+       WHERE category = ANY($1)
+       ORDER BY score DESC
+       LIMIT 100`,
+      [categories]
+    );
+
+    const limit = TIER_LIMITS[effectiveTier] ?? TIER_LIMITS.free;
   const payload = rows.map((r, idx) => ({
     ...r,
     velocity: Number(r.velocity_pct),
