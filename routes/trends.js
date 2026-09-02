@@ -4,7 +4,11 @@ const { refreshTrends } = require("../services/geminiTrends");
 const { persistFreeSignals } = require("../services/freeTrendSources");
 const { requireUser } = require("../services/auth");
 
-const TIER_LIMITS = { free: 3, pro: Infinity, investor: Infinity };
+const TIER_LIMITS = { free: 3, pro: Infinity, investor: Infinity, signal: Infinity, signalplus: Infinity };
+
+function normalizeTier(value) {
+  return String(value || "free").trim().toLowerCase().replace(/[+\s]/g, "");
+}
 const CATEGORY_SOURCE_SEARCH = {
   Product: "https://www.amazon.com/s?k=",
   CryptoCoin: "https://www.coingecko.com/en/search?query=",
@@ -30,7 +34,7 @@ router.get("/", async (req, res) => {
   try {
     const { pool } = req.app.locals;
     const persona = req.query.persona || "creator";
-    const tier = req.query.tier || "free";
+    const tier = normalizeTier(req.query.tier || "free");
     const CATEGORY_BY_PERSONA = {
       creator: ["Sound", "Hashtag", "Format", "Topic", "News"],
       store: ["Product", "Aesthetic", "Hashtag", "Topic", "News"],
@@ -48,12 +52,12 @@ router.get("/", async (req, res) => {
       const authClient = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_PUBLISHABLE_KEY);
       const { data } = await authClient.auth.getUser(token);
       if (data.user) {
-        const subscription = await pool.query("SELECT tier FROM subscriptions WHERE user_id = $1 AND status = 'active' ORDER BY (tier = 'investor') DESC, created_at DESC LIMIT 1", [data.user.id]);
-        effectiveTier = subscription.rows[0]?.tier || "free";
+        const subscription = await pool.query("SELECT tier FROM subscriptions WHERE user_id = $1 AND status = 'active' ORDER BY (tier IN ('investor', 'signal', 'signal+') OR tier ILIKE 'signal%') DESC, created_at DESC LIMIT 1", [data.user.id]);
+        effectiveTier = normalizeTier(subscription.rows[0]?.tier || "free");
       }
     }
   }
-    const categories = ["pro", "investor"].includes(effectiveTier)
+    const categories = ["pro", "investor", "signal", "signalplus"].includes(effectiveTier)
       ? ["Sound", "Hashtag", "Format", "Product", "Aesthetic", "Coin", "Narrative", "CryptoCoin", "MemeCoin", "CryptoMaker", "Topic", "News"]
       : (CATEGORY_BY_PERSONA[persona] || CATEGORY_BY_PERSONA.creator);
     const { rows } = await pool.query(

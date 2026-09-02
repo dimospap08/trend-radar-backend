@@ -832,7 +832,7 @@ export default function TrendRadar() {
             {isLoggedIn ? (
               <div className="flex items-center gap-2">
                 {hasActiveSub ? (
-                  <span className="hidden sm:flex mono text-[10px] text-[#7cffb0] bg-[#0f2a1c] border border-[#2a5540] rounded-full px-2.5 py-1">PRO</span>
+                  <span className="hidden sm:flex mono text-[10px] text-[#7cffb0] bg-[#0f2a1c] border border-[#2a5540] rounded-full px-2.5 py-1">{isSignalPlan ? "SIGNAL+" : paidTier === "pro" ? "PRO" : "ACTIVE"}</span>
                 ) : trialActive ? (
                   <span className="hidden sm:flex mono text-[10px] text-[#c9bfff] bg-[#160f2e] border border-[#7c5cff]/40 rounded-full px-2.5 py-1">
                     {trialDaysLeft}d trial left
@@ -1013,7 +1013,7 @@ export default function TrendRadar() {
           </div>
         ) : !profileLoaded ? (
           <div className="glass rounded-2xl p-10 text-center animate-pulse"><p className="body-f text-sm text-[#a99fd4]">Loading your access…</p></div>
-        ) : !selectedPlan ? (
+        ) : !selectedPlan && !hasActiveSub ? (
           <div className="glass rounded-2xl p-8 text-center">
             <p className="display font-semibold mb-2">Choose your plan to continue</p>
             <p className="body-f text-sm text-[#a99fd4] mb-5">Start your 3-day free trial. You can cancel anytime.</p>
