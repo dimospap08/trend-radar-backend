@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useRef } from "react";
+import React, { useState, useEffect, useLayoutEffect, useMemo, useRef } from "react";
 import { createClient } from "@supabase/supabase-js";
 import {
   Radar, TrendingUp, Star, Users, ShoppingBag, Coins, Video,
@@ -490,6 +490,54 @@ export default function TrendRadar() {
   const [subscriptionTier, setSubscriptionTier] = useState(null);
   const [selectedPlan, setSelectedPlan] = useState(null);
   const [profileLoaded, setProfileLoaded] = useState(false);
+
+  // Repair legacy mojibake that was already stored in some visible labels.
+  // This keeps old cached/live records readable while the source data is cleaned up.
+  useLayoutEffect(() => {
+    const fixes = [
+      [String.fromCharCode(946, 8364, 8221), "—"],
+      [String.fromCharCode(946, 8364, 8220), "–"],
+      [String.fromCharCode(946, 8364, 8230), "…"],
+      [String.fromCharCode(914, 183), "·"],
+      [String.fromCharCode(915, 8212), "×"],
+      [String.fromCharCode(915, 169), "©"],
+      [String.fromCharCode(946, 8211, 182), "▶"],
+      [String.fromCharCode(946, 8224, 8217), "→"],
+      [String.fromCharCode(946, 8212, 143), ""],
+      [String.fromCharCode(946, 8224, 8212), ""],
+      [String.fromCharCode(946, 8212, 8249), ""],
+      [String.fromCharCode(960, 159, 142, 181), "🎵"],
+      [String.fromCharCode(959, 904, 143, 946, 402, 163), "#️⃣"],
+      [String.fromCharCode(960, 159, 142, 172), "🎬"],
+      [String.fromCharCode(960, 159, 8250, 141, 959, 904, 143), "🛍️"],
+      [String.fromCharCode(946, 156, 168), "✨"],
+      [String.fromCharCode(960, 159, 63737, 8482), "🪙"],
+      [String.fromCharCode(960, 159, 8217, 172), "💬"],
+      [String.fromCharCode(946, 8218, 911), "₿"],
+      [String.fromCharCode(960, 159, 144, 904), "🐸"],
+      [String.fromCharCode(960, 159, 8250, 160, 959, 904, 143), "🛠️"],
+    ];
+    const repair = (value) => fixes.reduce((text, [bad, good]) => text.split(bad).join(good), value);
+    const clean = (root) => {
+      if (!root) return;
+      if (root.nodeType === Node.TEXT_NODE) {
+        const repaired = repair(root.nodeValue || "");
+        if (repaired !== root.nodeValue) root.nodeValue = repaired;
+        return;
+      }
+      const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+      const textNodes = [];
+      let node;
+      while ((node = walker.nextNode())) textNodes.push(node);
+      textNodes.forEach(clean);
+    };
+    clean(document.body);
+    const observer = new MutationObserver((records) => {
+      records.forEach((record) => record.addedNodes.forEach(clean));
+    });
+    observer.observe(document.body, { childList: true, subtree: true });
+    return () => observer.disconnect();
+  }, []);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => setSession(data.session));
