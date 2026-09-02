@@ -2,6 +2,8 @@ require("dotenv").config({ path: ".env.local" });
 require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
+const helmet = require("helmet");
+const rateLimit = require("express-rate-limit");
 const { Pool } = require("pg");
 const cron = require("node-cron");
 
@@ -16,7 +18,14 @@ const app = express();
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 app.locals.pool = pool;
 
-app.use(cors()); // allow the frontend (different domain) to call this API
+const allowedOrigins = (process.env.CORS_ORIGINS || "https://trendradarpro.com,http://localhost:5173")
+  .split(",").map((origin) => origin.trim()).filter(Boolean);
+app.use(helmet({ crossOriginResourcePolicy: { policy: "cross-origin" } }));
+app.use(cors({ origin(origin, callback) {
+  if (!origin || allowedOrigins.includes(origin)) return callback(null, true);
+  return callback(new Error("Origin not allowed by CORS"));
+}}));
+app.use(rateLimit({ windowMs: 15 * 60 * 1000, limit: 240, standardHeaders: true, legacyHeaders: false }));
 
 app.use("/api/billing/webhook", express.raw({ type: "application/json" }));
 app.use(express.json());
