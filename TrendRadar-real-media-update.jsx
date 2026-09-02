@@ -533,9 +533,12 @@ export default function TrendRadar() {
     };
     clean(document.body);
     const observer = new MutationObserver((records) => {
-      records.forEach((record) => record.addedNodes.forEach(clean));
+      records.forEach((record) => {
+        if (record.type === "characterData") clean(record.target);
+        record.addedNodes.forEach(clean);
+      });
     });
-    observer.observe(document.body, { childList: true, subtree: true });
+    observer.observe(document.body, { childList: true, characterData: true, subtree: true });
     return () => observer.disconnect();
   }, []);
 
