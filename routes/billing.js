@@ -3,10 +3,7 @@ const router = express.Router();
 const Stripe = require("stripe");
 const { requireUser } = require("../services/auth");
 
-function getStripe() {
-  if (!process.env.STRIPE_SECRET_KEY) throw new Error("Stripe is not configured");
-  return Stripe(process.env.STRIPE_SECRET_KEY);
-}
+const stripe = Stripe(process.env.STRIPE_SECRET_KEY);
 
 const PRICE_IDS = {
   pro: process.env.STRIPE_PRICE_PRO,
@@ -14,10 +11,6 @@ const PRICE_IDS = {
 };
 
 router.post("/checkout", requireUser, async (req, res) => {
-  if (process.env.BILLING_ENABLED !== "true") {
-    return res.status(503).json({ error: "Billing is not available during the beta." });
-  }
-  const stripe = getStripe();
   const { tier } = req.body;
   const user_id = req.user.id;
   const email = req.user.email;
@@ -27,9 +20,7 @@ router.post("/checkout", requireUser, async (req, res) => {
   const session = await stripe.checkout.sessions.create({
     mode: "subscription",
     customer_email: email,
-    payment_method_collection: "always",
     line_items: [{ price: priceId, quantity: 1 }],
-    subscription_data: { trial_period_days: 3 },
     success_url: `${process.env.APP_URL}/?checkout=success&session_id={CHECKOUT_SESSION_ID}`,
     cancel_url: `${process.env.APP_URL}/#pricing`,
     metadata: { user_id, tier },
@@ -39,10 +30,7 @@ router.post("/checkout", requireUser, async (req, res) => {
 });
 
 router.post("/webhook", async (req, res) => {
-  if (process.env.BILLING_ENABLED !== "true") return res.status(404).end();
   const { pool } = req.app.locals;
-  let stripe;
-  try { stripe = getStripe(); } catch (_) { return res.status(503).json({ error: "Billing is not configured" }); }
   const sig = req.headers["stripe-signature"];
 
   let event;

@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from "react";
 import { createClient } from "@supabase/supabase-js";
-import { Analytics } from "@vercel/analytics/react";
 import {
   Radar, TrendingUp, Star, Users, ShoppingBag, Coins, Video,
   Check, Activity, Bell, ArrowRight, Gauge, Sparkles, Lock,
@@ -12,16 +11,10 @@ import {
 /* =========================================================
    SUPABASE (auth + trial)
    ========================================================= */
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
-const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+const SUPABASE_URL = "https://kxxedfhxmcakfxmtneeq.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_PPIszEpxdZDsv2nqLQgL1Q_V5FOX-Qp";
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 const TRIAL_DAYS = 3;
-const BILLING_ENABLED = import.meta.env.VITE_BILLING_ENABLED === "true";
-const DATA_REGION = import.meta.env.VITE_TREND_REGION || "Global web signals";
-const GA_MEASUREMENT_ID = import.meta.env.VITE_GA_MEASUREMENT_ID;
-const trackEvent = (name, params = {}) => {
-  if (typeof window !== "undefined" && typeof window.gtag === "function") window.gtag("event", name, params);
-};
 const normalizeTier = (value) => String(value || "").trim().toLowerCase().replace(/[+\s]/g, "");
 
 /* =========================================================
@@ -489,7 +482,7 @@ function SignInModal({ onClose }) {
               disabled={status === "sending"}
               className="w-full bg-gradient-to-r from-[#8b6bff] to-[#6941e8] text-white py-3 rounded-xl text-sm font-semibold hover:shadow-[0_0_25px_rgba(124,92,255,0.4)] transition disabled:opacity-50"
             >
-              {status === "sending" ? "Sending..." : "Request beta access"}
+              {status === "sending" ? "Sending..." : "Send magic link"}
             </button>
             {status === "error" && (
               <p className="mono text-xs text-[#ff8a8a]">Something went wrong — please try again.</p>
@@ -548,8 +541,6 @@ export default function TrendRadar() {
   const [selectedPlan, setSelectedPlan] = useState(null);
   const [profileLoaded, setProfileLoaded] = useState(false);
   const [alerts, setAlerts] = useState([]);
-  const isLoggedIn = !!session?.user;
-  const hasSignalAccess = isLoggedIn && hasActiveSub && ["investor", "signal", "signalplus"].includes(normalizeTier(activeTier));
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => setSession(data.session));
@@ -602,16 +593,15 @@ export default function TrendRadar() {
   }, [persona, session?.access_token, activeTier]);
 
   useEffect(() => {
-    if (!hasSignalAccess || !session?.access_token) { setFootballMatches([]); setFootballLoading(false); return; }
     let cancelled = false;
     setFootballLoading(true);
-    fetch(`${API_BASE}/api/sports/matches`, { headers: { Authorization: `Bearer ${session.access_token}` } })
+    fetch(`${API_BASE}/api/sports/matches`)
       .then((response) => response.json())
       .then((data) => { if (!cancelled) setFootballMatches(Array.isArray(data?.matches) ? data.matches.slice(0, 12) : []); })
       .catch(() => { if (!cancelled) setFootballMatches([]); })
       .finally(() => { if (!cancelled) setFootballLoading(false); });
     return () => { cancelled = true; };
-  }, [hasSignalAccess, session?.access_token]);
+  }, []);
 
   useEffect(() => {
     try {
@@ -641,8 +631,7 @@ export default function TrendRadar() {
   useEffect(() => {
     if (!selectedTrend?.id) return;
     let cancelled = false;
-    if (!session?.access_token) return;
-    fetch(`${API_BASE}/api/trends/${selectedTrend.id}/history`, { headers: { Authorization: `Bearer ${session.access_token}` } })
+    fetch(`${API_BASE}/api/trends/${selectedTrend.id}/history`)
       .then((response) => response.ok ? response.json() : null)
       .then((data) => {
         const history = Array.isArray(data?.history) ? data.history : [];
@@ -710,6 +699,8 @@ export default function TrendRadar() {
     setAlerts((previous) => previous.filter((item) => item.id !== alertId));
   };
 
+  const isLoggedIn = !!session?.user;
+  const hasSignalAccess = isLoggedIn && hasActiveSub && ["investor", "signal", "signalplus"].includes(normalizeTier(activeTier));
   const categories = hasSignalAccess
     ? CATEGORY_VISUALS.map((item) => item.key)
     : CATEGORY_BY_PERSONA[persona];
@@ -736,6 +727,7 @@ export default function TrendRadar() {
   const handleRefresh = async () => {
     setRefreshing(true);
     try {
+      await fetch(`${API_BASE}/api/trends/refresh`, { method: "POST" });
       const headers = session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {};
       const tierQuery = activeTier ? `&tier=${encodeURIComponent(activeTier)}` : "";
       const r = await fetch(`${API_BASE}/api/trends?persona=${persona}${tierQuery}`, { headers });
@@ -745,16 +737,15 @@ export default function TrendRadar() {
     finally { setRefreshing(false); }
   };
   const openMatch = async (match) => {
-    if (!hasSignalAccess || !session?.access_token) return;
     setSelectedMatch(match); setMatchDetails(null); setMatchLoading(true);
-    try { const response = await fetch(`${API_BASE}/api/sports/matches/${match.fixture?.id}`, { headers: { Authorization: `Bearer ${session.access_token}` } }); const data = await response.json(); setMatchDetails(data); } catch (_) { setMatchDetails({ error: true }); } finally { setMatchLoading(false); }
+    try { const response = await fetch(`${API_BASE}/api/sports/matches/${match.fixture?.id}`); const data = await response.json(); setMatchDetails(data); } catch (_) { setMatchDetails({ error: true }); } finally { setMatchLoading(false); }
   };
   const searchFootball = async () => {
     const query = footballQuery.trim();
     if (!query) return;
     setFootballLoading(true);
     try {
-      const response = await fetch(`${API_BASE}/api/sports/search?q=${encodeURIComponent(query)}`, { headers: { Authorization: `Bearer ${session.access_token}` } });
+      const response = await fetch(`${API_BASE}/api/sports/search?q=${encodeURIComponent(query)}`);
       const data = await response.json();
       setFootballMatches(Array.isArray(data.matches) ? data.matches : []);
     } catch (_) { setFootballMatches([]); }
@@ -785,7 +776,6 @@ export default function TrendRadar() {
   const freeLimit = trialExpiredNoSub ? 0 : hasFullAccess ? Infinity : 3;
 
   const startCheckout = async (planId) => {
-    if (!BILLING_ENABLED) { trackEvent("beta_access_requested", { plan: planId }); setShowSignIn(true); return; }
     const email = session?.user?.email;
     if (!session?.access_token || !email) { setShowSignIn(true); return; }
     try {
@@ -795,7 +785,7 @@ export default function TrendRadar() {
         body: JSON.stringify({ email, tier: planId }),
       });
       const data = await res.json();
-      if (data.url) { trackEvent("checkout_started", { plan: planId }); window.location.href = data.url; }
+      if (data.url) window.location.href = data.url;
       else alert("Checkout failed to start. Please try again.");
     } catch (err) {
       alert("Could not reach checkout. Please try again.");
@@ -955,8 +945,8 @@ function MatchAnalytics({ match, loading, details, saved, close, toggleSaved }) 
             </span>
           </h1>
           <p className="body-f text-[#b3a9d9] text-[15px] leading-relaxed mb-8 max-w-md">
-            TrendRadar turns live web and search signals into clear opportunities for creators and marketers.
-            See the source, momentum and context before you decide what to make next.
+            Our engine scans live signals across TikTok, Reels, product marketplaces and on-chain
+            narratives every hour — surfacing what's about to break out, hours before it's obvious.
           </p>
           <div className="flex flex-wrap gap-2 mb-4">
             {PERSONAS.map((p) => {
@@ -983,7 +973,7 @@ function MatchAnalytics({ match, loading, details, saved, close, toggleSaved }) 
               onClick={() => setShowSignIn(true)}
               className="inline-flex items-center gap-2 bg-gradient-to-r from-[#8b6bff] to-[#6941e8] text-white px-6 py-3.5 rounded-xl font-semibold text-sm hover:shadow-[0_0_30px_rgba(124,92,255,0.45)] transition shadow-lg"
             >
-              Request beta access <ArrowRight className="w-4 h-4" />
+              Start 3-day free trial <ArrowRight className="w-4 h-4" />
             </button>
           ) : (
             <a
@@ -1062,7 +1052,7 @@ function MatchAnalytics({ match, loading, details, saved, close, toggleSaved }) 
         </div>
       </section>
 
-      <section className={`max-w-6xl mx-auto px-6 pb-6 ${hasSignalAccess ? "" : "hidden"}`}>
+      <section className="max-w-6xl mx-auto px-6 pb-6">
         <button onClick={() => setFootballOpen((value) => !value)} className="flex w-full items-center gap-4 rounded-3xl border border-[#58b8ff]/40 bg-gradient-to-r from-[#142650] to-[#101a38] p-5 text-left hover:border-[#35d07f] transition">
           <span className="text-4xl">⚽</span><span><span className="display block text-lg font-extrabold">Football & Betting</span><span className="body-f text-xs text-[#9eb9e8]">Live matches, odds and AI statistics · {footballOpen ? "folder open" : "click to open"}</span></span><span className="ml-auto text-2xl text-[#58b8ff]">{footballOpen ? "⌃" : "⌄"}</span>
         </button>
@@ -1074,15 +1064,15 @@ function MatchAnalytics({ match, loading, details, saved, close, toggleSaved }) 
             {!isFree && <span className="absolute right-3 top-3 rounded-full bg-[#0b1028]/80 p-1.5 text-[#c084fc]"><Lock className="h-3.5 w-3.5" /></span>}
             <div className="flex h-10 w-10 items-center justify-center rounded-xl mb-3" style={{ background: `${item.color}25` }}><Icon className="h-5 w-5" style={{ color: item.color }} /></div><p className="display text-xs font-bold">{item.key === "Sound" ? "TikTok Sounds" : `${item.key}s`}</p><p className="body-f text-[10px] text-[#9eb9e8] mt-1">{isFree ? "Open folder →" : "Signal plan · locked"}</p>
           </button>; })}
-          <button onClick={() => { if (!hasSignalAccess) { setSignalNotice(true); window.setTimeout(() => setSignalNotice(false), 4200); return; } setFootballOpen(true); document.getElementById("football-signals")?.scrollIntoView({ behavior: "smooth" }); }} className={`glass rounded-2xl border p-4 text-left hover:-translate-y-1 transition ${hasSignalAccess ? "border-[#35d07f]/35 hover:border-[#35d07f]" : "border-[#c084fc]/25 hover:border-[#c084fc]"}`}><div className="flex h-10 w-10 items-center justify-center rounded-xl mb-3 text-xl" style={{ background: hasSignalAccess ? "#35d07f25" : "#c084fc25" }}>⚽</div><p className="display text-xs font-bold">Football & Betting</p><p className="body-f text-[10px] text-[#9eb9e8] mt-1">{hasSignalAccess ? "Open folder →" : "Signal+ only · locked"}</p>{!hasSignalAccess && <Lock className="absolute right-3 top-3 h-3.5 w-3.5 text-[#c084fc]" />}</button>
+          <button onClick={() => { if (!hasProAccess) { setSignalNotice(true); window.setTimeout(() => setSignalNotice(false), 4200); return; } setFootballOpen(true); document.getElementById("football-signals")?.scrollIntoView({ behavior: "smooth" }); }} className={`glass rounded-2xl border p-4 text-left hover:-translate-y-1 transition ${hasProAccess ? "border-[#35d07f]/35 hover:border-[#35d07f]" : "border-[#c084fc]/25 hover:border-[#c084fc]"}`}><div className="flex h-10 w-10 items-center justify-center rounded-xl mb-3 text-xl" style={{ background: hasProAccess ? "#35d07f25" : "#c084fc25" }}>⚽</div><p className="display text-xs font-bold">Football & Betting</p><p className="body-f text-[10px] text-[#9eb9e8] mt-1">{hasProAccess ? "Open folder →" : "Pro plan · locked"}</p>{!hasProAccess && <Lock className="absolute right-3 top-3 h-3.5 w-3.5 text-[#c084fc]" />}</button>
           {!hasSignalAccess && SIGNAL_LOCKED_FOLDERS.map((item) => { const Icon = item.icon; return <button key={item.key} onClick={() => { setSignalNotice(true); window.setTimeout(() => setSignalNotice(false), 4200); }} className="group relative glass rounded-2xl border border-[#c084fc]/25 p-4 text-left hover:-translate-y-1 hover:border-[#c084fc] transition"><div className="absolute right-3 top-3 rounded-full bg-[#0b1028]/80 p-1.5 text-[#c084fc]"><Lock className="h-3.5 w-3.5" /></div><div className="flex h-10 w-10 items-center justify-center rounded-xl mb-3" style={{ background: `${item.color}25` }}><Icon className="h-5 w-5" style={{ color: item.color }} /></div><p className="display text-xs font-bold">{item.key}</p><p className="body-f text-[10px] text-[#9eb9e8] mt-1">Signal plan · locked</p></button>; })}
           {hasSignalAccess && SIGNAL_LOCKED_FOLDERS.map((item) => { const Icon = item.icon; return <button key={item.key} onClick={() => { setSelectedCategory(item.category); document.getElementById("feed")?.scrollIntoView({ behavior: "smooth" }); }} className="group relative glass rounded-2xl border border-[#35d07f]/25 p-4 text-left hover:-translate-y-1 hover:border-[#35d07f] transition"><div className="flex h-10 w-10 items-center justify-center rounded-xl mb-3" style={{ background: `${item.color}25` }}><Icon className="h-5 w-5" style={{ color: item.color }} /></div><p className="display text-xs font-bold">{item.key}</p><p className="body-f text-[10px] text-[#9eb9e8] mt-1">Open folder →</p></button>; })}
         </div>
       </section>
       {/* FOOTBALL SIGNALS */}
-      <section id="football-signals" className={`max-w-6xl mx-auto px-6 pb-16 ${footballOpen && hasSignalAccess ? "" : "hidden"}`}>
+      <section id="football-signals" className={`max-w-6xl mx-auto px-6 pb-16 ${footballOpen && hasProAccess ? "" : "hidden"}`}>
         <div className="flex items-end justify-between gap-4 mb-5">
-          <div><p className="mono text-[10px] uppercase tracking-[.22em] text-[#8ea7ff]">Signal+ intelligence</p><h2 className="display text-2xl md:text-3xl font-extrabold mt-1">Football Signals <span className="text-[#35d07f]">· live</span></h2><p className="body-f text-sm theme-muted mt-2">Real fixtures first. AI analysis comes after the numbers. Informational only — not betting advice.</p></div>
+          <div><p className="mono text-[10px] uppercase tracking-[.22em] text-[#8ea7ff]">Pro intelligence</p><h2 className="display text-2xl md:text-3xl font-extrabold mt-1">Football Signals <span className="text-[#35d07f]">· live</span></h2><p className="body-f text-sm theme-muted mt-2">Real fixtures first. AI analysis comes after the numbers.</p></div>
           <span className="mono text-[10px] text-[#35d07f] border border-[#35d07f]/30 rounded-full px-3 py-1">LIVE DATA</span>
         </div>
         <div className="relative mb-5 max-w-3xl mx-auto"><Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#58b8ff]" /><input value={footballQuery} onChange={(e) => setFootballQuery(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") searchFootball(); }} placeholder="Search any team or competition worldwide…" className="w-full rounded-2xl border-2 border-[#58b8ff]/50 bg-[#142650]/90 py-4 pl-12 pr-4 text-sm body-f text-white outline-none focus:border-[#35d07f] shadow-[0_0_30px_rgba(50,130,255,.16)]" /></div>{footballLoading ? <div className="glass rounded-2xl p-8 text-center body-f theme-muted">Loading today’s fixtures…</div> : filteredFootballMatches.length === 0 ? <div className="glass rounded-2xl p-8 text-center body-f theme-muted">No fixtures available right now.</div> : <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">{filteredFootballMatches.map((match) => { const home = match.teams?.home; const away = match.teams?.away; const date = match.fixture?.date ? new Date(match.fixture.date).toLocaleString([], { weekday: "short", hour: "2-digit", minute: "2-digit" }) : "Upcoming"; return <div key={match.fixture?.id} className="glass rounded-2xl p-4 hover:border-[#58b8ff]/60 transition cursor-pointer" onClick={() => openMatch(match)}><div className="flex items-center justify-between mb-4"><span className="mono text-[9px] uppercase tracking-widest text-[#8ea7ff]">{match.league?.name || "Football"}</span><span className="mono text-[9px] text-[#35d07f]">{date}</span></div><div className="flex items-center justify-between gap-3"><div className="flex-1 text-center"><img src={home?.logo} alt="" className="w-10 h-10 object-contain mx-auto mb-2" /><p className="display text-xs font-bold leading-tight">{home?.name || "Home"}</p></div><div className="mono text-xs text-[#a99fd4]">VS</div><div className="flex-1 text-center"><img src={away?.logo} alt="" className="w-10 h-10 object-contain mx-auto mb-2" /><p className="display text-xs font-bold leading-tight">{away?.name || "Away"}</p></div></div><div className="mt-4 rounded-xl bg-[#142650]/60 border border-[#6f8dff]/20 px-3 py-2 text-center"><span className="mono text-[9px] text-[#b9d5ff]">OPEN FULL AI MATCH ANALYSIS →</span></div></div>; })}</div>}
@@ -1096,7 +1086,7 @@ function MatchAnalytics({ match, loading, details, saved, close, toggleSaved }) 
             {!checkingLive && (
               liveTrends ? (
                 <span className="flex items-center gap-1.5 mono text-[10px] text-[#c9bfff] bg-[#160f2e] border border-[#7c5cff]/40 rounded-full px-2.5 py-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#7c5cff] animate-pulse" /> LIVE · {DATA_REGION} · Google {sourceStatus.google} · GDELT {sourceStatus.gdelt}
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#7c5cff] animate-pulse" /> LIVE · Google {sourceStatus.google} · GDELT {sourceStatus.gdelt}
                 </span>
               ) : (
                 <span className="mono text-[10px] text-[#655a92] bg-[#0f0d1f] border border-[#1c1633] rounded-full px-2.5 py-1">
@@ -1257,12 +1247,12 @@ function MatchAnalytics({ match, loading, details, saved, close, toggleSaved }) 
         <p className="mono text-[11px] tracking-widest text-[#7c5cff] mb-3">PLANS</p>
         <h2 className="display text-2xl md:text-3xl font-bold mb-2">Unlock every signal.</h2>
         <p className="body-f text-[#a99fd4] mb-10 text-sm">
-          Beta access is currently invitation-only. Billing will open after the public launch.
+          Every plan starts with a 3-day free trial — cancel anytime, no charge if you cancel before it ends.
         </p>
         <div className="grid md:grid-cols-2 gap-5 max-w-3xl">
           {[
             { id: "pro", name: "Pro", price: "$29", period: "/mo", features: ["All trends, live", "Push alerts on new signals", "Watchlist & history", "Every category unlocked"], highlight: true },
-            { id: "investor", name: "Signal+", price: "$99", period: "/mo", features: ["Everything in Pro", "Football & Betting intelligence", "On-chain meme-coin scanner", "Priority on new signal types"] },
+            { id: "investor", name: "Signal+", price: "$99", period: "/mo", features: ["Everything in Pro", "On-chain meme-coin scanner", "API access", "Priority on new signal types"] },
           ].map((plan) => (
             <div
               key={plan.id}
@@ -1295,7 +1285,7 @@ function MatchAnalytics({ match, loading, details, saved, close, toggleSaved }) 
                 }}
                 className="mt-6 w-full py-3 rounded-xl text-sm font-semibold transition bg-gradient-to-r from-[#8b6bff] to-[#6941e8] text-white shadow-lg hover:shadow-[0_0_25px_rgba(124,92,255,0.4)]"
               >
-                {BILLING_ENABLED ? (isLoggedIn ? "Choose plan" : "Start 3-day trial") : "Join the beta"}
+                {isLoggedIn ? "Choose plan" : "Start free trial"}
               </button>
             </div>
           ))}
@@ -1311,12 +1301,8 @@ function MatchAnalytics({ match, loading, details, saved, close, toggleSaved }) 
           <a href="/privacy.html" className="hover:text-[#c9bfff] transition">Privacy Policy</a>
           <span className="text-[#2a2150]">·</span>
           <a href="/terms.html" className="hover:text-[#c9bfff] transition">Terms of Service</a>
-          <a href="/methodology.html" className="hover:text-[#c9bfff] transition">Methodology</a>
-          <a href="/contact.html" className="hover:text-[#c9bfff] transition">Contact</a>
         </div>
         <p className="mono text-[10px] text-[#4a4270] mt-4">© {new Date().getFullYear()} Trend Radar. All rights reserved.</p>
-        <Analytics />
-        {GA_MEASUREMENT_ID && <script async src={`https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`} onLoad={() => { window.dataLayer = window.dataLayer || []; window.gtag = (...args) => window.dataLayer.push(args); window.gtag("js", new Date()); window.gtag("config", GA_MEASUREMENT_ID); }} />}
       </footer>
     </div>
   );

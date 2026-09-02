@@ -3,7 +3,6 @@ const router = express.Router();
 const { refreshTrends } = require("../services/geminiTrends");
 const { persistFreeSignals } = require("../services/freeTrendSources");
 const { requireUser } = require("../services/auth");
-const { requireAdmin } = require("../services/access");
 
 const TIER_LIMITS = { free: 3, pro: Infinity, investor: Infinity, signal: Infinity, signalplus: Infinity };
 
@@ -105,7 +104,7 @@ router.get("/", async (req, res) => {
   }
 });
 
-router.get("/:id/history", requireUser, async (req, res) => {
+router.get("/:id/history", async (req, res) => {
   const { pool } = req.app.locals;
   const { rows } = await pool.query(
     `SELECT measured_at, velocity, score
@@ -135,7 +134,7 @@ router.post("/:id/watch", requireUser, async (req, res) => {
   res.json({ watching: true });
 });
 
-router.post("/refresh", requireUser, requireAdmin, async (req, res) => {
+router.post("/refresh", async (req, res) => {
   const { pool } = req.app.locals;
   try {
     const result = await refreshTrends(pool, process.env.GEMINI_API_KEY);
@@ -146,7 +145,7 @@ router.post("/refresh", requireUser, requireAdmin, async (req, res) => {
   }
 });
 
-router.post("/refresh-free", requireUser, requireAdmin, async (req, res) => {
+router.post("/refresh-free", async (req, res) => {
   const { pool } = req.app.locals;
   try {
     const result = await persistFreeSignals(pool);

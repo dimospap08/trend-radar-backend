@@ -1,10 +1,6 @@
 const express = require("express");
 const router = express.Router();
 const { upcomingMatches, searchCatalog, matchesForSelection, matchDetails } = require("../services/footballApi-global-search");
-const { requireUser } = require("../services/auth");
-const { requireSignalAccess } = require("../services/access");
-
-router.use(requireUser, requireSignalAccess);
 
 router.get("/matches", async (req, res) => {
   try {
