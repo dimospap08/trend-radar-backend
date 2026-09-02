@@ -642,8 +642,9 @@ export default function TrendRadar() {
   };
   const hasFullAccess = isLoggedIn && (trialActive || hasActiveSub);
   const trialExpiredNoSub = isLoggedIn && profileLoaded && !trialActive && !hasActiveSub;
-  const paidTier = selectedPlan || subscriptionTier;
-  const footballProAccess = isLoggedIn && hasFullAccess && ["pro", "investor"].includes(paidTier);
+  const paidTier = String(selectedPlan || subscriptionTier || "").trim().toLowerCase().replace(/[+\s]/g, "");
+  const isSignalPlan = ["signal", "signalplus", "investor"].includes(paidTier);
+  const footballProAccess = isLoggedIn && hasFullAccess && (paidTier === "pro" || isSignalPlan);
 
   // Anonymous / not-yet-trialed visitors see a capped preview; expired trial sees nothing.
   const freeLimit = trialExpiredNoSub ? 0 : hasFullAccess ? Infinity : 3;
