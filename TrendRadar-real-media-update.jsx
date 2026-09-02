@@ -487,6 +487,7 @@ export default function TrendRadar() {
   const [showSignIn, setShowSignIn] = useState(false);
   const [trialStartedAt, setTrialStartedAt] = useState(null);
   const [hasActiveSub, setHasActiveSub] = useState(false);
+  const [subscriptionTier, setSubscriptionTier] = useState(null);
   const [selectedPlan, setSelectedPlan] = useState(null);
   const [profileLoaded, setProfileLoaded] = useState(false);
 
@@ -505,16 +506,18 @@ export default function TrendRadar() {
         .select("trial_started_at, selected_plan")
         .eq("id", session.user.id)
         .maybeSingle();
-      const { data: subRow } = await supabase
+      const { data: subRows } = await supabase
         .from("subscriptions")
-        .select("status")
+        .select("status, tier")
         .eq("user_id", session.user.id)
         .eq("status", "active")
-        .maybeSingle();
+        .order("created_at", { ascending: false })
+        .limit(1);
       if (cancelled) return;
       setTrialStartedAt(userRow?.trial_started_at ?? session.user.created_at);
       setSelectedPlan(userRow?.selected_plan ?? null);
-      setHasActiveSub(!!subRow);
+      setHasActiveSub(!!subRows?.[0]);
+      setSubscriptionTier(subRows?.[0]?.tier ?? null);
       setProfileLoaded(true);
     })();
     return () => { cancelled = true; };
@@ -588,7 +591,8 @@ export default function TrendRadar() {
   };
   const hasFullAccess = isLoggedIn && (trialActive || hasActiveSub);
   const trialExpiredNoSub = isLoggedIn && profileLoaded && !trialActive && !hasActiveSub;
-  const footballProAccess = isLoggedIn && hasFullAccess && ["pro", "investor"].includes(selectedPlan);
+  const paidTier = selectedPlan || subscriptionTier;
+  const footballProAccess = isLoggedIn && hasFullAccess && ["pro", "investor"].includes(paidTier);
 
   // Anonymous / not-yet-trialed visitors see a capped preview; expired trial sees nothing.
   const freeLimit = trialExpiredNoSub ? 0 : hasFullAccess ? Infinity : 3;
@@ -745,14 +749,14 @@ export default function TrendRadar() {
 
       {/* NAV */}
       <header className="border-b border-[#1c1633] sticky top-0 bg-[#060512]/85 backdrop-blur-md z-30">
-        <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-4 md:px-6 py-3 flex items-center justify-between gap-4">
           <div className="flex items-center gap-2.5">
             <div className="relative w-7 h-7 flex items-center justify-center rounded-lg bg-gradient-to-br from-[#7c5cff] to-[#4a2fb8]">
               <Radar className="w-4 h-4 text-white" />
             </div>
             <span className="display font-bold tracking-tight text-[15px]">TREND/RADAR</span>
           </div>
-          <nav className="hidden md:flex items-center gap-9 body-f text-[13px] font-semibold tracking-[0.08em] text-[#b9afd9]">
+          <nav className="hidden lg:flex items-center gap-1 body-f text-[11px] font-semibold tracking-[0.06em] text-[#b9afd9]">
             <a href="#categories" className="nav-link">CATEGORIES</a>
             <a href="#feed" className="nav-link">LIVE FEED</a>
             <a href="#how" className="nav-link">HOW IT WORKS</a>
@@ -762,13 +766,13 @@ export default function TrendRadar() {
             <button onClick={toggleTheme} aria-label="Toggle theme" className="w-9 h-9 rounded-full border border-[#2a2150] flex items-center justify-center hover:border-[#7c5cff] transition">
               {lightMode ? <Moon className="w-4 h-4 text-[#6044d8]" /> : <Sun className="w-4 h-4 text-[#f5b83d]" />}
             </button>
-            <button onClick={() => setShowSettings(true)} aria-label="Open football settings" className="hidden sm:flex items-center gap-1.5 rounded-xl border border-[#2a2150] px-3 py-2 mono text-[10px] font-bold text-[#c9bfff] hover:border-[#7c5cff] transition">
+            <button onClick={() => setShowSettings(true)} aria-label="Open football settings" className="hidden sm:flex items-center gap-1.5 rounded-xl border border-[#2a2150] px-2.5 py-1.5 mono text-[10px] font-bold text-[#c9bfff] hover:border-[#7c5cff] transition">
               <Settings className="w-3.5 h-3.5" /> Football
             </button>
             <button
               onClick={handleRefresh}
               disabled={refreshing}
-              className="flex items-center gap-2 mono text-xs font-bold text-white bg-gradient-to-r from-[#9b78ff] via-[#7c5cff] to-[#5c3ee8] shadow-[0_0_25px_rgba(124,92,255,.45)] hover:shadow-[0_0_38px_rgba(124,92,255,.7)] hover:-translate-y-0.5 px-5 py-3 rounded-xl transition disabled:opacity-50"
+              className="flex items-center gap-2 mono text-xs font-bold text-white bg-gradient-to-r from-[#9b78ff] via-[#7c5cff] to-[#5c3ee8] shadow-[0_0_25px_rgba(124,92,255,.45)] hover:shadow-[0_0_38px_rgba(124,92,255,.7)] hover:-translate-y-0.5 px-3 py-2 rounded-xl transition disabled:opacity-50"
             >
               <RefreshCw className={`w-4 h-4 ${refreshing ? "animate-spin" : ""}`} />
               {refreshing ? "Scanning..." : "Refresh"}
