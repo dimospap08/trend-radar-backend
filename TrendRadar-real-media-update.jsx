@@ -5,7 +5,7 @@ import {
   Check, Activity, Bell, ArrowRight, Gauge, Sparkles, Lock,
   ShieldCheck, Zap, Clock, Music2, Hash, Layers, Palette, MessageSquare,
   Mail, LogOut, User as UserIcon,
-  Sun, Moon, RefreshCw,
+  Sun, Moon, RefreshCw, ExternalLink, Settings, Trophy,
 } from "lucide-react";
 
 /* =========================================================
@@ -23,14 +23,18 @@ const PERSONAS = [
   { id: "creator", label: "Creator", icon: Video, tag: "TikTok / Shorts / Reels" },
   { id: "store", label: "E-commerce", icon: ShoppingBag, tag: "Product sourcing" },
   { id: "marketer", label: "Marketer", icon: Users, tag: "Campaign timing" },
-  { id: "investor", label: "Investor", icon: Coins, tag: "Meme-coin narratives" },
+  { id: "coins", label: "Coins", icon: Coins, tag: "Market-moving crypto assets" },
+  { id: "memecoins", label: "Meme Coins", icon: Coins, tag: "Meme-coin momentum" },
+  { id: "crypto-makers", label: "Crypto Makers", icon: Users, tag: "Builders, creators and protocols" },
 ];
 
 const CATEGORY_BY_PERSONA = {
   creator: ["Sound", "Hashtag", "Format"],
   store: ["Product", "Aesthetic", "Hashtag"],
   marketer: ["Hashtag", "Format", "Aesthetic"],
-  investor: ["Coin", "Narrative"],
+  coins: ["CryptoCoin"],
+  memecoins: ["MemeCoin"],
+  "crypto-makers": ["CryptoMaker"],
 };
 
 const NAME_POOL = {
@@ -41,8 +45,21 @@ const NAME_POOL = {
   Aesthetic: ["mob wife 2.0", "dopamine minimalism", "goblincore office", "liminal beige"],
   Coin: ["$FROGWIF", "$STATIC", "$NANOCAT", "$GHOSTPEPE", "$BRAINROT"],
   Narrative: ["AI-agent memes", "retro-internet nostalgia", "sleep-deprived dev humor", "anti-hustle culture", "Italian brainrot animal lore", "surreal AI-generated meme creatures"],
+  CryptoCoin: ["Bitcoin ETF flows", "Solana DeFi rotation", "Ethereum restaking", "Base ecosystem growth", "Chainlink oracle demand"],
+  MemeCoin: ["PEPE community revival", "BONK trading velocity", "FLOKI gaming narrative", "BRETT Base momentum", "WIF social dominance"],
+  CryptoMaker: ["Farcaster mini-app builders", "Zora creator launches", "Base protocol teams", "Solana creator tools", "On-chain game studios"],
 };
 const PLATFORMS = ["TikTok", "Instagram Reels", "X", "YouTube Shorts", "Telegram"];
+const CATEGORY_SOURCE_SEARCH = {
+  Product: "https://www.amazon.com/s?k=",
+  CryptoCoin: "https://www.coingecko.com/en/search?query=",
+  MemeCoin: "https://dexscreener.com/search?q=",
+  CryptoMaker: "https://www.google.com/search?q=",
+};
+const PRODUCT_MARKETPLACE_SEARCH = [
+  "https://www.amazon.com/s?k=",
+  "https://www.aliexpress.com/wholesale?SearchText=",
+];
 
 function seedRandom(seed) {
   let s = seed;
@@ -56,7 +73,7 @@ function generateTrends() {
   const out = [];
   let id = 0;
   Object.entries(NAME_POOL).forEach(([category, names]) => {
-    names.forEach((name) => {
+    names.forEach((name, nameIndex) => {
       id += 1;
       const velocity = Math.round(20 + rand() * 780);
       const spark = Array.from({ length: 12 }, (_, i) => {
@@ -71,6 +88,11 @@ function generateTrends() {
         score: Math.min(99, Math.round(velocity / 9 + rand() * 15)),
         description: "A live signal detected by Trend Radar.",
         emoji: "📡",
+        sourceUrl: category === "Product"
+          ? PRODUCT_MARKETPLACE_SEARCH[nameIndex % PRODUCT_MARKETPLACE_SEARCH.length] + encodeURIComponent(name)
+          : CATEGORY_SOURCE_SEARCH[category]
+            ? CATEGORY_SOURCE_SEARCH[category] + encodeURIComponent(name.replace(/^\$/, ""))
+          : null,
       });
     });
   });
@@ -79,6 +101,21 @@ function generateTrends() {
 const ALL_TRENDS = generateTrends();
 
 const API_BASE = import.meta.env.VITE_API_URL || "https://trend-radar-backend-production.up.railway.app";
+const POPULAR_FOOTBALL_OPTIONS = [
+  { type: "team", id: 541, name: "Real Madrid", country: "Spain", logo: "https://media.api-sports.io/football/teams/541.png" },
+  { type: "team", id: 529, name: "Barcelona", country: "Spain", logo: "https://media.api-sports.io/football/teams/529.png" },
+  { type: "team", id: 40, name: "Liverpool", country: "England", logo: "https://media.api-sports.io/football/teams/40.png" },
+  { type: "league", id: 2, name: "UEFA Champions League", country: "World", logo: "https://media.api-sports.io/football/leagues/2.png" },
+  { type: "league", id: 39, name: "Premier League", country: "England", logo: "https://media.api-sports.io/football/leagues/39.png" },
+  { type: "league", id: 140, name: "La Liga", country: "Spain", logo: "https://media.api-sports.io/football/leagues/140.png" },
+  { type: "league", id: 78, name: "Bundesliga", country: "Germany", logo: "https://media.api-sports.io/football/leagues/78.png" },
+  { type: "league", id: 135, name: "Serie A", country: "Italy", logo: "https://media.api-sports.io/football/leagues/135.png" },
+];
+const FOOTBALL_TRENDS = [
+  { title: "Big-match attention", detail: "Search interest is accelerating around the next major fixture.", signal: "+284%", score: 88, color: "#35d07f" },
+  { title: "Club momentum", detail: "A selected club is building strong conversation before kickoff.", signal: "+176%", score: 74, color: "#7c5cff" },
+  { title: "League spotlight", detail: "A league is gaining global attention across fans and media.", signal: "+129%", score: 68, color: "#f5b83d" },
+];
 
 function normalizeTrend(t) {
   const hoursAgo = t.first_seen_at
@@ -98,7 +135,7 @@ function normalizeTrend(t) {
     score: Number(t.score ?? 50),
     description: t.description || TREND_COPY[t.category] || "A live signal detected by Trend Radar.",
     emoji: CATEGORY_EMOJI[t.category] || "📡",
-      sourceUrl: /^https?:\/\//i.test(String(t.source_url || "")) ? t.source_url : null,
+      sourceUrl: /^https?:\/\//i.test(String(t.source_url || t.sourceUrl || "")) ? (t.source_url || t.sourceUrl) : null,
       mediaUrl: /^https?:\/\//i.test(String(t.media_url || "")) ? t.media_url : null,
     mediaType: t.media_type === "video" ? "video" : "image",
     spark,
@@ -315,6 +352,9 @@ const CATEGORY_VISUALS = [
   { key: "Aesthetic", icon: Palette, color: "#8b6bff", desc: "Visual styles taking over feeds" },
   { key: "Coin", icon: Coins, color: "#ffd166", desc: "On-chain narratives gaining early velocity" },
   { key: "Narrative", icon: MessageSquare, color: "#7cc8ff", desc: "Cultural moments forming in real time" },
+  { key: "CryptoCoin", icon: Coins, color: "#62a8ff", desc: "Large-cap crypto assets with fresh momentum" },
+  { key: "MemeCoin", icon: Coins, color: "#ff8b6a", desc: "Meme coins gaining attention before the crowd" },
+  { key: "CryptoMaker", icon: Users, color: "#79e0c2", desc: "Crypto builders, creators and protocols to watch" },
 ];
 
 const TREND_COPY = {
@@ -325,10 +365,13 @@ const TREND_COPY = {
   Aesthetic: "A visual direction spreading through feeds and creator content.",
   Coin: "An emerging on-chain narrative showing unusual momentum and attention.",
   Narrative: "A cultural conversation building across communities and media channels.",
+  CryptoCoin: "A major crypto asset showing an early change in attention and momentum.",
+  MemeCoin: "A meme-coin community or token showing unusual early attention.",
+  CryptoMaker: "A crypto builder, creator or protocol attracting fresh ecosystem attention.",
 };
-const CATEGORY_EMOJI = { Sound: "🎵", Hashtag: "#️⃣", Format: "🎬", Product: "🛍️", Aesthetic: "✨", Coin: "🪙", Narrative: "💬" };
-const TREND_ACTION = { Sound: "Use this audio in your next 1–2 posts.", Hashtag: "Add it only where it fits your content angle.", Format: "Adapt this format before it becomes saturated.", Product: "Validate demand before competitors catch up.", Aesthetic: "Build your next creative around this visual direction.", Coin: "Watch momentum and risk before taking action.", Narrative: "Create content around the conversation while it is early." };
-const TREND_MEDIA = { Sound: "https://images.unsplash.com/photo-1516280440614-37939bbacd81?auto=format&fit=crop&w=1000&q=80", Hashtag: "https://images.unsplash.com/photo-1611162617474-5b21e879e113?auto=format&fit=crop&w=1000&q=80", Format: "https://images.unsplash.com/photo-1492724441997-5dc865305da7?auto=format&fit=crop&w=1000&q=80", Product: "https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=1000&q=80", Aesthetic: "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&w=1000&q=80", Coin: "https://images.unsplash.com/photo-1621416894569-0f39ed31d247?auto=format&fit=crop&w=1000&q=80", Narrative: "https://images.unsplash.com/photo-1531058020387-3be344556be6?auto=format&fit=crop&w=1000&q=80" };
+const CATEGORY_EMOJI = { Sound: "🎵", Hashtag: "#️⃣", Format: "🎬", Product: "🛍️", Aesthetic: "✨", Coin: "🪙", Narrative: "💬", CryptoCoin: "₿", MemeCoin: "🐸", CryptoMaker: "🛠️" };
+const TREND_ACTION = { Sound: "Use this audio in your next 1–2 posts.", Hashtag: "Add it only where it fits your content angle.", Format: "Adapt this format before it becomes saturated.", Product: "Validate demand before competitors catch up.", Aesthetic: "Build your next creative around this visual direction.", Coin: "Watch momentum and risk before taking action.", Narrative: "Create content around the conversation while it is early.", CryptoCoin: "Review liquidity and risk before taking action.", MemeCoin: "Check liquidity, holders and risk before taking action.", CryptoMaker: "Research the team and product before making a decision." };
+const TREND_MEDIA = { Sound: "https://images.unsplash.com/photo-1516280440614-37939bbacd81?auto=format&fit=crop&w=1000&q=80", Hashtag: "https://images.unsplash.com/photo-1611162617474-5b21e879e113?auto=format&fit=crop&w=1000&q=80", Format: "https://images.unsplash.com/photo-1492724441997-5dc865305da7?auto=format&fit=crop&w=1000&q=80", Product: "https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=1000&q=80", Aesthetic: "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&w=1000&q=80", Coin: "https://images.unsplash.com/photo-1621416894569-0f39ed31d247?auto=format&fit=crop&w=1000&q=80", Narrative: "https://images.unsplash.com/photo-1531058020387-3be344556be6?auto=format&fit=crop&w=1000&q=80", CryptoCoin: "https://images.unsplash.com/photo-1621416894569-0f39ed31d247?auto=format&fit=crop&w=1000&q=80", MemeCoin: "https://images.unsplash.com/photo-1611605698335-8b1569810432?auto=format&fit=crop&w=1000&q=80", CryptoMaker: "https://images.unsplash.com/photo-1556761175-b413da4baf72?auto=format&fit=crop&w=1000&q=80" };
 
 const PREVIEW_SIGNALS = [
   { category: "TikTok Sound", name: "Trending audio signal", score: 92, velocity: "+743%", color: "#35d07f" },
@@ -428,6 +471,16 @@ export default function TrendRadar() {
   const [lightMode, setLightMode] = useState(() => localStorage.getItem("trend-theme") === "light");
   const [expandedColumns, setExpandedColumns] = useState({});
   const [selectedTrend, setSelectedTrend] = useState(null);
+  const [showSettings, setShowSettings] = useState(false);
+  const [footballQuery, setFootballQuery] = useState("");
+  const [footballResults, setFootballResults] = useState({ teams: [], leagues: [] });
+  const [footballSearching, setFootballSearching] = useState(false);
+  const [footballError, setFootballError] = useState("");
+  const [footballMatches, setFootballMatches] = useState([]);
+  const [footballMatchesLoading, setFootballMatchesLoading] = useState(false);
+  const [selectedFootball, setSelectedFootball] = useState(() => {
+    try { return JSON.parse(localStorage.getItem("football-preferences") || "[]"); } catch { return []; }
+  });
 
   // Auth + trial state
   const [session, setSession] = useState(null);
@@ -500,7 +553,9 @@ export default function TrendRadar() {
   };
 
   const categories = CATEGORY_BY_PERSONA[persona];
-  const visibleTrends = liveTrends ?? ALL_TRENDS.filter((t) => categories.includes(t.category));
+  const fallbackTrends = ALL_TRENDS.filter((t) => categories.includes(t.category));
+  const livePersonaTrends = liveTrends?.filter((trend) => categories.includes(trend.category));
+  const visibleTrends = livePersonaTrends?.length ? livePersonaTrends : fallbackTrends;
   const activePersona = PERSONAS.find((p) => p.id === persona);
 
   const handleRefresh = async () => {
@@ -533,9 +588,23 @@ export default function TrendRadar() {
   };
   const hasFullAccess = isLoggedIn && (trialActive || hasActiveSub);
   const trialExpiredNoSub = isLoggedIn && profileLoaded && !trialActive && !hasActiveSub;
+  const footballProAccess = isLoggedIn && hasFullAccess && ["pro", "investor"].includes(selectedPlan);
 
   // Anonymous / not-yet-trialed visitors see a capped preview; expired trial sees nothing.
   const freeLimit = trialExpiredNoSub ? 0 : hasFullAccess ? Infinity : 3;
+
+  useEffect(() => {
+    if (!footballProAccess || !selectedFootball.length) { setFootballMatches([]); return undefined; }
+    let cancelled = false;
+    const selected = selectedFootball[0];
+    setFootballMatchesLoading(true);
+    fetch(`${API_BASE}/api/sports/matches?${selected.type}=${encodeURIComponent(selected.id)}`)
+      .then((response) => response.ok ? response.json() : Promise.reject(new Error("Football matches unavailable")))
+      .then((data) => { if (!cancelled) setFootballMatches((data.matches || []).slice(0, 4)); })
+      .catch(() => { if (!cancelled) setFootballMatches([]); })
+      .finally(() => { if (!cancelled) setFootballMatchesLoading(false); });
+    return () => { cancelled = true; };
+  }, [footballProAccess, selectedFootball]);
 
   const startCheckout = async (planId) => {
     const email = session?.user?.email || window.prompt("Enter your email to continue to checkout:");
@@ -557,17 +626,79 @@ export default function TrendRadar() {
     }
   };
 
+  const searchFootball = async (event) => {
+    event?.preventDefault();
+    const query = footballQuery.trim();
+    if (!query) { setFootballResults({ teams: [], leagues: [] }); return; }
+    setFootballSearching(true);
+    setFootballError("");
+    try {
+      const response = await fetch(`${API_BASE}/api/sports/search?q=${encodeURIComponent(query)}`);
+      if (!response.ok) throw new Error("Search unavailable");
+      const data = await response.json();
+      setFootballResults({ teams: data.teams || [], leagues: data.leagues || [] });
+    } catch {
+      const lower = query.toLowerCase();
+      setFootballResults({
+        teams: POPULAR_FOOTBALL_OPTIONS.filter((item) => item.type === "team" && item.name.toLowerCase().includes(lower)),
+        leagues: POPULAR_FOOTBALL_OPTIONS.filter((item) => item.type === "league" && item.name.toLowerCase().includes(lower)),
+      });
+      setFootballError("Live search is unavailable, so popular options are shown.");
+    } finally { setFootballSearching(false); }
+  };
+
+  const toggleFootballOption = (option) => {
+    const normalized = {
+      type: option.type,
+      id: option.id,
+      name: option.name,
+      country: typeof option.country === "object" ? (option.country?.name || "Worldwide") : (option.country || "Worldwide"),
+      logo: option.logo || option.logo_path || "",
+    };
+    setSelectedFootball((current) => {
+      const exists = current.some((item) => item.type === normalized.type && String(item.id) === String(normalized.id));
+      const next = exists
+        ? current.filter((item) => !(item.type === normalized.type && String(item.id) === String(normalized.id)))
+        : [...current, normalized].slice(-12);
+      localStorage.setItem("football-preferences", JSON.stringify(next));
+      return next;
+    });
+  };
+
   return (
     <div className={`min-h-screen ${lightMode ? "theme-light" : "theme-dark"} relative`}>
       <GrainOverlay />
       {showSignIn && <SignInModal onClose={() => setShowSignIn(false)} />}
+      {showSettings && <div className="fixed inset-0 z-50 flex items-center justify-center px-4 bg-[#060512]/80 backdrop-blur-sm" onClick={() => setShowSettings(false)}>
+        <div className="glass rounded-3xl p-6 md:p-7 w-full max-w-2xl max-h-[88vh] overflow-y-auto" onClick={(event) => event.stopPropagation()}>
+          <div className="flex items-start justify-between gap-4 mb-6">
+            <div><p className="mono text-[10px] tracking-widest text-[#7c5cff] mb-2">PREFERENCES</p><h2 className="display text-2xl font-extrabold">Football radar</h2><p className="body-f text-sm text-[#a99fd4] mt-1">Choose leagues and teams from around the world.</p></div>
+            <button onClick={() => setShowSettings(false)} aria-label="Close settings" className="text-[#a99fd4] text-xl">×</button>
+          </div>
+          <form onSubmit={searchFootball} className="flex gap-2 mb-5">
+            <input value={footballQuery} onChange={(event) => setFootballQuery(event.target.value)} placeholder="Search Real Madrid, Barcelona, Liverpool, Premier League..." className="min-w-0 flex-1 bg-[#0f0d1f] border border-[#241c40] rounded-xl px-4 py-3 text-sm body-f text-[#f2eefa] outline-none focus:border-[#7c5cff]" />
+            <button type="submit" disabled={footballSearching} className="shrink-0 rounded-xl bg-gradient-to-r from-[#8b6bff] to-[#6941e8] px-4 py-3 text-sm font-semibold text-white">{footballSearching ? "Searching..." : "Search"}</button>
+          </form>
+          {footballError && <p className="body-f text-xs text-[#f5b83d] mb-4">{footballError}</p>}
+          <p className="mono text-[10px] tracking-widest text-[#7c729f] mb-3">POPULAR WORLDWIDE</p>
+          <div className="grid sm:grid-cols-2 gap-2 mb-6">
+            {POPULAR_FOOTBALL_OPTIONS.map((option) => {
+              const selected = selectedFootball.some((item) => item.type === option.type && String(item.id) === String(option.id));
+              return <button type="button" key={`${option.type}-${option.id}`} onClick={() => toggleFootballOption(option)} className={`flex items-center gap-3 rounded-xl border p-3 text-left transition ${selected ? "border-[#7c5cff] bg-[#1c1440]" : "border-[#241c40] bg-[#100c20] hover:border-[#7c5cff]/60"}`}><img src={option.logo} alt="" className="w-8 h-8 object-contain" /><span className="min-w-0"><span className="block body-f text-sm font-semibold truncate">{option.name}</span><span className="block mono text-[9px] text-[#7c729f] uppercase">{option.type} · {option.country}</span></span>{selected && <Check className="w-4 h-4 ml-auto text-[#7cffb0]" />}</button>;
+            })}
+          </div>
+          {(footballResults.teams.length > 0 || footballResults.leagues.length > 0) && <div className="mb-6"><p className="mono text-[10px] tracking-widest text-[#7c729f] mb-3">SEARCH RESULTS</p><div className="grid sm:grid-cols-2 gap-2">{[...footballResults.teams.map((item) => ({ ...item, type: "team" })), ...footballResults.leagues.map((item) => ({ ...item, type: "league" }))].map((option) => { const selected = selectedFootball.some((item) => item.type === option.type && String(item.id) === String(option.id)); return <button type="button" key={`${option.type}-${option.id}`} onClick={() => toggleFootballOption(option)} className={`flex items-center gap-3 rounded-xl border p-3 text-left transition ${selected ? "border-[#7c5cff] bg-[#1c1440]" : "border-[#241c40] bg-[#100c20] hover:border-[#7c5cff]/60"}`}><img src={option.logo} alt="" className="w-8 h-8 object-contain" /><span className="min-w-0"><span className="block body-f text-sm font-semibold truncate">{option.name}</span><span className="block mono text-[9px] text-[#7c729f] uppercase">{option.type} · {option.country || "Worldwide"}</span></span>{selected && <Check className="w-4 h-4 ml-auto text-[#7cffb0]" />}</button>; })}</div></div>}
+          <div className="rounded-2xl border border-[#2a2150] bg-[#100c20] p-4"><div className="flex items-center gap-2 mb-3"><Trophy className="w-4 h-4 text-[#f5b83d]" /><p className="display text-sm font-bold">Your football radar</p></div>{selectedFootball.length ? <div className="flex flex-wrap gap-2">{selectedFootball.map((item) => <button type="button" key={`${item.type}-${item.id}`} onClick={() => toggleFootballOption(item)} className="rounded-full border border-[#7c5cff]/40 bg-[#1c1440] px-3 py-1.5 text-xs text-[#c9bfff]">{item.name} ×</button>)}</div> : <p className="body-f text-xs text-[#7c729f]">No teams or leagues selected yet.</p>}</div>
+        </div>
+      </div>}
       {selectedTrend && <div className="fixed inset-0 z-40 flex items-center justify-center bg-[#060512]/75 backdrop-blur-md px-4" onClick={() => setSelectedTrend(null)}><div className="glass rounded-3xl w-full max-w-lg p-7 shadow-2xl max-h-[92vh] overflow-y-auto" onClick={(event) => event.stopPropagation()}><div className="flex items-start justify-between"><div className="flex items-center gap-3"><div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-[#8b6bff]/30 to-[#4b8cff]/20 border border-[#8b6bff]/40 flex items-center justify-center text-3xl">{selectedTrend.emoji || CATEGORY_EMOJI[selectedTrend.category] || "📡"}</div><div><p className="mono text-[10px] uppercase tracking-widest text-[#a98bff]">{selectedTrend.category} · {selectedTrend.platform}</p><h3 className="display text-xl font-extrabold mt-1">{selectedTrend.name}</h3></div></div><button onClick={() => setSelectedTrend(null)} className="text-[#a99fd4] text-xl">×</button></div><div className="relative mt-6 h-52 rounded-2xl overflow-hidden border border-[#7c5cff]/25"><img src={TREND_MEDIA[selectedTrend.category] || TREND_MEDIA.Narrative} alt={`Example visual for ${selectedTrend.name}`} className="w-full h-full object-cover" /><div className="absolute inset-0 bg-gradient-to-t from-[#060512]/80 via-transparent to-transparent" /><div className="absolute bottom-4 left-4 flex items-center gap-2"><span className="w-9 h-9 rounded-full bg-white text-[#4b35b8] flex items-center justify-center text-sm">▶</span><span className="mono text-[10px] text-white uppercase tracking-widest">Example preview · {selectedTrend.platform}</span></div></div><div className="mt-5 rounded-2xl bg-[#130f26]/70 border border-[#7c5cff]/20 p-4"><Sparkline data={selectedTrend.spark} color={selectedTrend.score >= 60 ? "#35d07f" : selectedTrend.score >= 30 ? "#f5b83d" : "#ff6b6b"} /><div className="grid grid-cols-2 gap-3 mt-4"><div><p className="mono text-[10px] text-[#7c729f]">TREND SCORE</p><p className={`display text-2xl font-extrabold ${selectedTrend.score >= 60 ? "text-[#35d07f]" : selectedTrend.score >= 30 ? "text-[#f5b83d]" : "text-[#ff6b6b]"}`}>{selectedTrend.score}</p></div><div><p className="mono text-[10px] text-[#7c729f]">VELOCITY</p><p className="display text-2xl font-extrabold text-[#a98bff]">+{selectedTrend.velocity}%</p></div></div></div><p className="body-f text-sm leading-relaxed text-[#b3a9d9] mt-5">{selectedTrend.description || TREND_COPY[selectedTrend.category] || "A live signal detected by Trend Radar."}</p><p className="body-f text-xs leading-relaxed text-[#a98bff] mt-2">{TREND_ACTION[selectedTrend.category] || "Move early while the signal is gaining momentum."}</p><p className="mono text-[10px] text-[#7c729f] mt-4">First detected {selectedTrend.firstSeen ?? "recently"} hours ago · Updated hourly</p></div></div>}
       {!isLoggedIn && <a href="#pricing" className="md:hidden fixed bottom-4 left-4 right-4 z-20 flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#8b6bff] to-[#6941e8] py-3.5 text-sm font-bold text-white shadow-[0_8px_30px_rgba(70,45,180,.45)]">Start 3-day free trial <ArrowRight className="w-4 h-4" /></a>}
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
-        .display { font-family: 'Manrope', sans-serif; letter-spacing: -0.035em; }
-        .body-f { font-family: 'DM Sans', sans-serif; }
-        .mono { font-family: 'JetBrains Mono', monospace; }
+         @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Source+Sans+3:wght@400;500;600;700&display=swap');
+         .theme-dark, .theme-light { font-family: 'Source Sans 3', sans-serif; }
+         .display { font-family: 'Plus Jakarta Sans', sans-serif; letter-spacing: -0.035em; }
+         .body-f { font-family: 'Source Sans 3', sans-serif; }
+         .mono { font-family: 'IBM Plex Mono', monospace; }
         * { scrollbar-color: #2a2150 #060512; }
         .glass {
           background: linear-gradient(180deg, rgba(23,18,45,0.7), rgba(15,12,31,0.7));
@@ -630,6 +761,9 @@ export default function TrendRadar() {
           <div className="flex items-center gap-3">
             <button onClick={toggleTheme} aria-label="Toggle theme" className="w-9 h-9 rounded-full border border-[#2a2150] flex items-center justify-center hover:border-[#7c5cff] transition">
               {lightMode ? <Moon className="w-4 h-4 text-[#6044d8]" /> : <Sun className="w-4 h-4 text-[#f5b83d]" />}
+            </button>
+            <button onClick={() => setShowSettings(true)} aria-label="Open football settings" className="hidden sm:flex items-center gap-1.5 rounded-xl border border-[#2a2150] px-3 py-2 mono text-[10px] font-bold text-[#c9bfff] hover:border-[#7c5cff] transition">
+              <Settings className="w-3.5 h-3.5" /> Football
             </button>
             <button
               onClick={handleRefresh}
@@ -904,7 +1038,10 @@ export default function TrendRadar() {
                     </span>
                     <span className={`mono text-[9px] font-bold ${t.score >= 60 ? "text-[#35d07f]" : t.score >= 30 ? "text-[#f5b83d]" : "text-[#ff6b6b]"}`}>{t.score >= 60 ? "HOT" : t.score >= 30 ? "WARMING" : "COOLING"} · {t.score}</span>
                   </div>
-                  <p className="mono text-[9px] text-[#4a4270] mt-1">first seen {t.firstSeen ?? "recently"}h ago</p>
+                  <div className="flex items-center justify-between gap-3 mt-1">
+                    <p className="mono text-[9px] text-[#4a4270]">first seen {t.firstSeen ?? "recently"}h ago</p>
+                    {t.sourceUrl && <a href={t.sourceUrl} target="_blank" rel="noreferrer" onClick={(event) => event.stopPropagation()} className="inline-flex items-center gap-1 mono text-[9px] text-[#a98bff] hover:text-white">{t.category === "Product" ? (t.sourceUrl.includes("aliexpress") ? "Open AliExpress" : "Open Amazon") : "Open source"} <ExternalLink className="w-3 h-3" /></a>}
+                  </div>
                 </div>
               );
                 })}
@@ -912,6 +1049,30 @@ export default function TrendRadar() {
                 {categoryTrends.length > 4 && <button onClick={() => setExpandedColumns((prev) => ({...prev, [category]: !isExpanded}))} className="w-full mt-3 py-2 rounded-lg border border-[#7c5cff]/25 text-[#a98bff] mono text-[10px] font-bold hover:bg-[#7c5cff]/10 transition">{isExpanded ? "Show less" : `See more (${categoryTrends.length - 4})`}</button>}
               </div>;
             })}
+          </div>
+        )}
+      </section>
+
+      {/* FOOTBALL TRENDS */}
+      <section id="football" className="max-w-6xl mx-auto px-6 pb-20">
+        <div className="flex items-end justify-between gap-4 mb-5">
+          <div><p className="mono text-[11px] tracking-widest text-[#7c5cff] mb-3">PRO SPORTS RADAR</p><h2 className="display text-2xl md:text-3xl font-bold">Football trends before kickoff.</h2><p className="body-f text-sm text-[#a99fd4] mt-2">Live attention signals for your selected teams and leagues.</p></div>
+          <span className="hidden sm:inline-flex items-center gap-1.5 rounded-full border border-[#7c5cff]/40 bg-[#160f2e] px-3 py-1.5 mono text-[10px] font-bold text-[#c9bfff]"><Lock className="w-3 h-3" /> PRO PLAN</span>
+        </div>
+        {!footballProAccess ? (
+          <div className="relative overflow-hidden glass rounded-2xl p-8 text-center">
+            <div className="absolute inset-0 bg-gradient-to-br from-[#7c5cff]/10 via-transparent to-[#f5b83d]/5 pointer-events-none" />
+            <Lock className="relative w-6 h-6 text-[#a98bff] mx-auto mb-3" />
+            <p className="relative display font-bold text-lg mb-2">Football trends are a Pro feature</p>
+            <p className="relative body-f text-sm text-[#a99fd4] max-w-md mx-auto mb-5">Choose teams and leagues in Football settings, then upgrade to Pro to see their live momentum signals.</p>
+            <a href="#pricing" className="relative inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#8b6bff] to-[#6941e8] px-5 py-2.5 text-sm font-semibold text-white">Unlock with Pro <ArrowRight className="w-4 h-4" /></a>
+          </div>
+        ) : (
+          <div className="grid lg:grid-cols-[1.2fr_.8fr] gap-4">
+            <div className="grid md:grid-cols-3 gap-3">
+              {FOOTBALL_TRENDS.map((trend) => <div key={trend.title} className="glass rounded-2xl p-5"><div className="flex items-center justify-between mb-5"><div className="w-9 h-9 rounded-xl flex items-center justify-center bg-[#160f2e] border border-[#2a2150]"><Trophy className="w-4 h-4" style={{ color: trend.color }} /></div><span className="mono text-[10px] font-bold" style={{ color: trend.color }}>{trend.signal}</span></div><p className="display font-bold text-sm mb-2">{trend.title}</p><p className="body-f text-xs leading-relaxed text-[#a99fd4]">{trend.detail}</p><div className="flex items-center justify-between mt-5"><span className="mono text-[9px] text-[#7c729f]">TREND SCORE</span><span className="display font-extrabold" style={{ color: trend.color }}>{trend.score}</span></div></div>)}
+            </div>
+            <div className="glass rounded-2xl p-5"><div className="flex items-center justify-between mb-4"><div><p className="display font-bold text-sm">Your watch scope</p><p className="mono text-[9px] text-[#7c729f] mt-1">{selectedFootball.length ? `${selectedFootball.length} selected` : "Select in settings"}</p></div><button onClick={() => setShowSettings(true)} className="rounded-lg border border-[#7c5cff]/40 px-3 py-2 mono text-[9px] font-bold text-[#c9bfff]">Edit</button></div>{selectedFootball.length ? <div className="flex flex-wrap gap-2 mb-4">{selectedFootball.map((item) => <span key={`${item.type}-${item.id}`} className="rounded-full border border-[#2a2150] bg-[#130f26] px-2.5 py-1 mono text-[9px] text-[#c9bfff]">{item.name}</span>)}</div> : <p className="body-f text-xs text-[#7c729f] mb-4">Open Football settings to choose a team or league.</p>}<div className="border-t border-[#1c1633] pt-4"><p className="mono text-[9px] tracking-widest text-[#7c729f] mb-3">UPCOMING SIGNALS</p>{footballMatchesLoading ? <p className="body-f text-xs text-[#a99fd4]">Loading fixtures...</p> : footballMatches.length ? <div className="space-y-2">{footballMatches.map((match) => <div key={match.fixture?.id} className="flex items-center justify-between gap-3 rounded-lg bg-[#130f26] px-3 py-2"><span className="body-f text-xs truncate">{match.teams?.home?.name} vs {match.teams?.away?.name}</span><span className="mono text-[9px] text-[#7c729f]">{match.fixture?.date ? new Date(match.fixture.date).toLocaleDateString() : "soon"}</span></div>)}</div> : <p className="body-f text-xs text-[#7c729f]">Select a team or league to load upcoming fixtures.</p>}</div></div>
           </div>
         )}
       </section>
@@ -925,7 +1086,7 @@ export default function TrendRadar() {
         </p>
         <div className="grid md:grid-cols-2 gap-5 max-w-3xl">
           {[
-            { id: "pro", name: "Pro", price: "$29", period: "/mo", features: ["All trends, live", "Push alerts on new signals", "Watchlist & history", "Every category unlocked"], highlight: true },
+            { id: "pro", name: "Pro", price: "$29", period: "/mo", features: ["All trends, live", "Football trends & global team watchlist", "Push alerts on new signals", "Watchlist & history", "Every category unlocked"], highlight: true },
             { id: "investor", name: "Signal+", price: "$99", period: "/mo", features: ["Everything in Pro", "On-chain meme-coin scanner", "API access", "Priority on new signal types"] },
           ].map((plan) => (
             <div

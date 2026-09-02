@@ -5,6 +5,26 @@ const { persistFreeSignals } = require("../services/freeTrendSources");
 const { requireUser } = require("../services/auth");
 
 const TIER_LIMITS = { free: 3, pro: Infinity, investor: Infinity };
+const CATEGORY_SOURCE_SEARCH = {
+  Product: "https://www.amazon.com/s?k=",
+  CryptoCoin: "https://www.coingecko.com/en/search?query=",
+  MemeCoin: "https://dexscreener.com/search?q=",
+  CryptoMaker: "https://www.google.com/search?q=",
+};
+
+function uniqueSourceUrl(row, usedUrls) {
+  const source = /^https?:\/\//i.test(String(row.source_url || "")) ? row.source_url : null;
+  if (source && !usedUrls.has(source)) {
+    usedUrls.add(source);
+    return source;
+  }
+  const searchBase = CATEGORY_SOURCE_SEARCH[row.category];
+  if (!searchBase) return source;
+  const fallback = searchBase + encodeURIComponent(String(row.name || "").replace(/^\$/, ""));
+  const unique = usedUrls.has(fallback) ? `${fallback}&trend=${encodeURIComponent(row.id)}` : fallback;
+  usedUrls.add(unique);
+  return unique;
+}
 
 router.get("/", async (req, res) => {
   try {
@@ -15,7 +35,9 @@ router.get("/", async (req, res) => {
       creator: ["Sound", "Hashtag", "Format", "Topic", "News"],
       store: ["Product", "Aesthetic", "Hashtag", "Topic", "News"],
       marketer: ["Hashtag", "Format", "Aesthetic", "Topic", "News"],
-      investor: ["Coin", "Narrative", "Topic", "News"],
+      coins: ["CryptoCoin"],
+      memecoins: ["MemeCoin"],
+      "crypto-makers": ["CryptoMaker"],
     };
 
     let effectiveTier = "free";
@@ -32,7 +54,7 @@ router.get("/", async (req, res) => {
     }
   }
     const categories = ["pro", "investor"].includes(effectiveTier)
-      ? ["Sound", "Hashtag", "Format", "Product", "Aesthetic", "Coin", "Narrative", "Topic", "News"]
+      ? ["Sound", "Hashtag", "Format", "Product", "Aesthetic", "Coin", "Narrative", "CryptoCoin", "MemeCoin", "CryptoMaker", "Topic", "News"]
       : (CATEGORY_BY_PERSONA[persona] || CATEGORY_BY_PERSONA.creator);
     const { rows } = await pool.query(
       `SELECT id, name, category, platform, velocity_pct, score, first_seen_at, spark_data, source_url, media_url, media_type
@@ -44,8 +66,10 @@ router.get("/", async (req, res) => {
     );
 
     const limit = TIER_LIMITS[effectiveTier] ?? TIER_LIMITS.free;
+    const usedUrls = new Set();
   const payload = rows.map((r, idx) => ({
     ...r,
+    source_url: uniqueSourceUrl(r, usedUrls),
     velocity: Number(r.velocity_pct),
     spark: Array.isArray(r.spark_data) ? r.spark_data : [],
     firstSeen: Math.max(0, Math.round((Date.now() - new Date(r.first_seen_at).getTime()) / 3600000)),

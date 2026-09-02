@@ -18,13 +18,13 @@ if (process.env.GOOGLE_CREDENTIALS_JSON && !process.env.GOOGLE_APPLICATION_CREDE
 }
 
 const GEMINI_MODEL = "gemini-2.5-flash";
-const CATEGORIES = ["Sound", "Hashtag", "Format", "Product", "Aesthetic", "Coin", "Narrative"];
+const CATEGORIES = ["Sound", "Hashtag", "Format", "Product", "Aesthetic", "Coin", "Narrative", "CryptoCoin", "MemeCoin", "CryptoMaker"];
 const PLATFORMS = ["TikTok", "Instagram Reels", "X", "YouTube Shorts", "Telegram"];
 const PROMPT = `You track emerging viral trends for a "trend radar" product used by
-TikTok creators, e-commerce sellers, marketers, and meme-coin traders.
+TikTok creators, e-commerce sellers, marketers, crypto investors, meme-coin traders, and crypto builders.
 Use Google Search to find things that are ACTUALLY gaining fast momentum
 right now (not things that are already fully mainstream/saturated) across
-these categories: ${CATEGORIES.join(", ")}.
+these categories: ${CATEGORIES.join(", ")}. Keep CryptoCoin, MemeCoin, and CryptoMaker strictly separate: each item belongs to only one of those categories and each must have its own distinct source_url.
 List 15-20 of them. For each item return:
 - name: short human-readable name
 - category: one of ${CATEGORIES.join(", ")}
@@ -32,6 +32,7 @@ List 15-20 of them. For each item return:
 - velocity_pct: your best estimate of % growth over the last 48 hours (integer, realistic range 20-500)
 - first_seen_hours_ago: your best estimate of how many hours ago this started gaining traction (integer, 1-72)
 - source_url: the exact public webpage found by Google Search that supports this trend; use null if unavailable
+- for Product items, prefer the exact public listing on Amazon, AliExpress, or the marketplace where the product was found
 - media_url: a direct public image/video URL only if reliably available; otherwise null, never invent URLs
 - media_type: "image" or "video"
 - description: one short sentence explaining what this is and why it matters now

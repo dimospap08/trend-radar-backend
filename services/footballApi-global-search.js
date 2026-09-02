@@ -19,6 +19,30 @@ async function upcomingMatches(date) {
   return apiFootball("/fixtures", { date: date || new Date().toISOString().slice(0, 10), timezone: "Europe/Athens" });
 }
 
+async function searchCatalog(query) {
+  const q = String(query || "").trim();
+  if (!q) return { teams: [], leagues: [] };
+  const [teams, leagues] = await Promise.all([
+    apiFootball("/teams", { search: q }),
+    apiFootball("/leagues", { search: q }),
+  ]);
+  return {
+    teams: teams.slice(0, 10).map((item) => item.team).filter(Boolean),
+    leagues: leagues.slice(0, 10).map((item) => item.league).filter(Boolean),
+  };
+}
+
+async function matchesForSelection({ team, league, date }) {
+  const from = date || new Date().toISOString().slice(0, 10);
+  const to = date || new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10);
+  const requests = [];
+  if (team) requests.push(apiFootball("/fixtures", { team, from, to, timezone: "Europe/Athens" }));
+  if (league) requests.push(apiFootball("/fixtures", { league, season: new Date(from).getUTCFullYear(), from, to, timezone: "Europe/Athens" }));
+  if (!requests.length) return [];
+  const results = await Promise.all(requests);
+  return results.flat().sort((a, b) => new Date(a.fixture?.date || 0) - new Date(b.fixture?.date || 0));
+}
+
 async function searchMatches(query, date) {
   const q = String(query || "").trim();
   if (!q) return [];
@@ -49,4 +73,4 @@ async function matchDetails(fixtureId) {
   return { fixture: fixtures[0] || null, statistics, odds, predictions: predictions[0] || null };
 }
 
-module.exports = { upcomingMatches, searchMatches, matchDetails };
+module.exports = { upcomingMatches, searchCatalog, matchesForSelection, searchMatches, matchDetails };
