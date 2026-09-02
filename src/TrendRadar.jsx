@@ -728,7 +728,9 @@ export default function TrendRadar() {
     setRefreshing(true);
     try {
       await fetch(`${API_BASE}/api/trends/refresh`, { method: "POST" });
-      const r = await fetch(`${API_BASE}/api/trends?persona=${persona}`);
+      const headers = session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {};
+      const tierQuery = activeTier ? `&tier=${encodeURIComponent(activeTier)}` : "";
+      const r = await fetch(`${API_BASE}/api/trends?persona=${persona}${tierQuery}`, { headers });
       const data = await r.json();
       if (data?.trends?.length > 0) setLiveTrends(data.trends.map(normalizeTrend));
     } catch (e) { /* backend unreachable */ }
@@ -766,6 +768,8 @@ export default function TrendRadar() {
     else alert("Could not save your plan selection. Please try again.");
   };
   const hasFullAccess = isLoggedIn && (trialActive || hasActiveSub);
+  const paidTier = normalizeTier(activeTier || selectedPlan);
+  const hasProAccess = isLoggedIn && hasFullAccess && (paidTier === "pro" || hasSignalAccess);
   const trialExpiredNoSub = isLoggedIn && profileLoaded && !trialActive && !hasActiveSub;
 
   // Anonymous / not-yet-trialed visitors see a capped preview; expired trial sees nothing.
@@ -1060,13 +1064,13 @@ function MatchAnalytics({ match, loading, details, saved, close, toggleSaved }) 
             {!isFree && <span className="absolute right-3 top-3 rounded-full bg-[#0b1028]/80 p-1.5 text-[#c084fc]"><Lock className="h-3.5 w-3.5" /></span>}
             <div className="flex h-10 w-10 items-center justify-center rounded-xl mb-3" style={{ background: `${item.color}25` }}><Icon className="h-5 w-5" style={{ color: item.color }} /></div><p className="display text-xs font-bold">{item.key === "Sound" ? "TikTok Sounds" : `${item.key}s`}</p><p className="body-f text-[10px] text-[#9eb9e8] mt-1">{isFree ? "Open folder →" : "Signal plan · locked"}</p>
           </button>; })}
-          <button onClick={() => { setFootballOpen(true); document.getElementById("football-signals")?.scrollIntoView({ behavior: "smooth" }); }} className="glass rounded-2xl border border-[#35d07f]/35 p-4 text-left hover:-translate-y-1 hover:border-[#35d07f] transition"><div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#35d07f]/15 mb-3 text-xl">⚽</div><p className="display text-xs font-bold">Football & Betting</p><p className="body-f text-[10px] text-[#9eb9e8] mt-1">Live folder →</p></button>
+          <button onClick={() => { if (!hasProAccess) { setSignalNotice(true); window.setTimeout(() => setSignalNotice(false), 4200); return; } setFootballOpen(true); document.getElementById("football-signals")?.scrollIntoView({ behavior: "smooth" }); }} className={`glass rounded-2xl border p-4 text-left hover:-translate-y-1 transition ${hasProAccess ? "border-[#35d07f]/35 hover:border-[#35d07f]" : "border-[#c084fc]/25 hover:border-[#c084fc]"}`}><div className="flex h-10 w-10 items-center justify-center rounded-xl mb-3 text-xl" style={{ background: hasProAccess ? "#35d07f25" : "#c084fc25" }}>⚽</div><p className="display text-xs font-bold">Football & Betting</p><p className="body-f text-[10px] text-[#9eb9e8] mt-1">{hasProAccess ? "Open folder →" : "Pro plan · locked"}</p>{!hasProAccess && <Lock className="absolute right-3 top-3 h-3.5 w-3.5 text-[#c084fc]" />}</button>
           {!hasSignalAccess && SIGNAL_LOCKED_FOLDERS.map((item) => { const Icon = item.icon; return <button key={item.key} onClick={() => { setSignalNotice(true); window.setTimeout(() => setSignalNotice(false), 4200); }} className="group relative glass rounded-2xl border border-[#c084fc]/25 p-4 text-left hover:-translate-y-1 hover:border-[#c084fc] transition"><div className="absolute right-3 top-3 rounded-full bg-[#0b1028]/80 p-1.5 text-[#c084fc]"><Lock className="h-3.5 w-3.5" /></div><div className="flex h-10 w-10 items-center justify-center rounded-xl mb-3" style={{ background: `${item.color}25` }}><Icon className="h-5 w-5" style={{ color: item.color }} /></div><p className="display text-xs font-bold">{item.key}</p><p className="body-f text-[10px] text-[#9eb9e8] mt-1">Signal plan · locked</p></button>; })}
           {hasSignalAccess && SIGNAL_LOCKED_FOLDERS.map((item) => { const Icon = item.icon; return <button key={item.key} onClick={() => { setSelectedCategory(item.category); document.getElementById("feed")?.scrollIntoView({ behavior: "smooth" }); }} className="group relative glass rounded-2xl border border-[#35d07f]/25 p-4 text-left hover:-translate-y-1 hover:border-[#35d07f] transition"><div className="flex h-10 w-10 items-center justify-center rounded-xl mb-3" style={{ background: `${item.color}25` }}><Icon className="h-5 w-5" style={{ color: item.color }} /></div><p className="display text-xs font-bold">{item.key}</p><p className="body-f text-[10px] text-[#9eb9e8] mt-1">Open folder →</p></button>; })}
         </div>
       </section>
       {/* FOOTBALL SIGNALS */}
-      <section id="football-signals" className={`max-w-6xl mx-auto px-6 pb-16 ${footballOpen ? "" : "hidden"}`}>
+      <section id="football-signals" className={`max-w-6xl mx-auto px-6 pb-16 ${footballOpen && hasProAccess ? "" : "hidden"}`}>
         <div className="flex items-end justify-between gap-4 mb-5">
           <div><p className="mono text-[10px] uppercase tracking-[.22em] text-[#8ea7ff]">Pro intelligence</p><h2 className="display text-2xl md:text-3xl font-extrabold mt-1">Football Signals <span className="text-[#35d07f]">· live</span></h2><p className="body-f text-sm theme-muted mt-2">Real fixtures first. AI analysis comes after the numbers.</p></div>
           <span className="mono text-[10px] text-[#35d07f] border border-[#35d07f]/30 rounded-full px-3 py-1">LIVE DATA</span>
@@ -1234,7 +1238,7 @@ function MatchAnalytics({ match, loading, details, saved, close, toggleSaved }) 
         )}
       </section>
 
-      {signalNotice && <div className="fixed bottom-6 left-1/2 z-[80] w-[min(92vw,430px)] -translate-x-1/2 rounded-2xl border border-[#c084fc]/50 bg-[#11142f]/95 p-4 shadow-[0_0_35px_rgba(192,132,252,.25)] backdrop-blur-xl animate-[shake_.45s_ease-in-out]"><div className="flex items-start gap-3"><div className="rounded-xl bg-[#c084fc]/15 p-2 text-[#c084fc]"><Lock className="h-5 w-5" /></div><div><p className="display text-sm font-bold">Signal folder locked</p><p className="body-f text-xs text-[#b9ccef] mt-1">Unlock the Signal+ plan to access Meme Coins, Crypto, Narratives and Global Markets.</p><button onClick={() => { setSignalNotice(false); document.getElementById("pricing")?.scrollIntoView({ behavior: "smooth" }); }} className="mt-3 rounded-lg bg-gradient-to-r from-[#8b6bff] to-[#6941e8] px-3 py-2 text-[11px] font-bold text-white">View Signal plan →</button></div><button onClick={() => setSignalNotice(false)} className="ml-auto text-[#9eb9e8]">×</button></div></div>}
+      {signalNotice && <div className="fixed bottom-6 left-1/2 z-[80] w-[min(92vw,430px)] -translate-x-1/2 rounded-2xl border border-[#c084fc]/50 bg-[#11142f]/95 p-4 shadow-[0_0_35px_rgba(192,132,252,.25)] backdrop-blur-xl animate-[shake_.45s_ease-in-out]"><div className="flex items-start gap-3"><div className="rounded-xl bg-[#c084fc]/15 p-2 text-[#c084fc]"><Lock className="h-5 w-5" /></div><div><p className="display text-sm font-bold">Signal folder locked</p><p className="body-f text-xs text-[#b9ccef] mt-1">Unlock the Signal+ plan to access Meme Coins, Crypto Makers, Crypto Markets, Narratives and Global Markets. Football requires Pro or Signal+.</p><button onClick={() => { setSignalNotice(false); document.getElementById("pricing")?.scrollIntoView({ behavior: "smooth" }); }} className="mt-3 rounded-lg bg-gradient-to-r from-[#8b6bff] to-[#6941e8] px-3 py-2 text-[11px] font-bold text-white">View Signal plan →</button></div><button onClick={() => setSignalNotice(false)} className="ml-auto text-[#9eb9e8]">×</button></div></div>}
 
       {profileSettings.showSourceLinks && selectedTrend?.sourceUrl && <a href={selectedTrend.sourceUrl} target="_blank" rel="noreferrer" className="fixed bottom-6 right-6 z-[90] inline-flex items-center gap-3 rounded-2xl border-2 border-[#35d07f] bg-gradient-to-r from-[#159957] to-[#35d07f] px-6 py-4 text-sm font-extrabold text-white shadow-[0_0_30px_rgba(53,208,127,.55)] animate-[sourcePulse_1.8s_ease-in-out_infinite] hover:scale-105 hover:from-[#35d07f] hover:to-[#159957] transition">🔗 Open original source <span className="text-lg">↗</span></a>}
 
