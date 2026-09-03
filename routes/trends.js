@@ -62,9 +62,15 @@ router.get("/", async (req, res) => {
       ? ["Sound", "Hashtag", "Format", "Product", "Aesthetic", "Narrative", "CryptoCoin", "MemeCoin", "CryptoMaker", "GlobalMarket"]
       : (CATEGORY_BY_PERSONA[persona] || CATEGORY_BY_PERSONA.creator);
     const { rows } = await pool.query(
-      `SELECT id, name, category, platform, velocity_pct, score, first_seen_at, spark_data, source_url, media_url, media_type
-       FROM trends
-       WHERE category = ANY($1)
+      `WITH ranked AS (
+         SELECT id, name, category, platform, velocity_pct, score, first_seen_at, spark_data, source_url, media_url, media_type,
+                ROW_NUMBER() OVER (PARTITION BY category ORDER BY first_seen_at DESC, score DESC) AS category_rank
+         FROM trends
+         WHERE category = ANY($1)
+       )
+       SELECT id, name, category, platform, velocity_pct, score, first_seen_at, spark_data, source_url, media_url, media_type
+       FROM ranked
+       WHERE category_rank <= 10
        ORDER BY score DESC
        LIMIT 100`,
       [categories]

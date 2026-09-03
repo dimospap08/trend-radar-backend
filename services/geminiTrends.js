@@ -26,8 +26,9 @@ TikTok creators, e-commerce sellers, marketers, crypto investors, meme-coin trad
 Use Google Search to find things that are ACTUALLY gaining fast momentum
 right now (not things that are already fully mainstream/saturated) across
 these categories: ${CATEGORIES.join(", ")}. Keep CryptoCoin, MemeCoin, and CryptoMaker strictly separate: each item belongs to only one of those categories and each must have its own distinct source_url.
-Return 35-50 items total, with at least 6 Products, 6 MemeCoins, 6 CryptoCoins,
-6 CryptoMakers and 4 GlobalMarket items whenever reliable current results exist.
+Return at least 10 items for every category whenever reliable current results exist
+(roughly 100 items total). A folder should never be filled with invented data just
+to reach the target: if a result cannot be verified, return fewer for that category.
 Do not invent names: every item must be a real entity found in the search results.
 For MemeCoin use a real token/project that currently exists; for CryptoMaker use
 a real protocol, company, open-source repository or developer tool; for Product
