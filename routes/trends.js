@@ -14,7 +14,7 @@ const CATEGORY_SOURCE_SEARCH = {
   CryptoCoin: "https://www.coingecko.com/en/search?query=",
   MemeCoin: "https://dexscreener.com/search?q=",
   CopyTrader: "https://www.google.com/search?q=",
-  GlobalMarket: "https://www.google.com/search?q=",
+  GlobalMarket: "https://news.google.com/search?q=",
 };
 
 function uniqueSourceUrl(row, usedUrls) {
