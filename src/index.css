@@ -15,4 +15,3 @@ html, body { margin: 0; padding: 0; }
 .theme-dark button.bg-gradient-to-r, .theme-dark a.bg-gradient-to-r { background: #63b0f5 !important; color: #1e2731 !important; box-shadow: none !important; }
 .theme-dark [class*="bg-gradient-to-br"], .theme-dark [class*="bg-gradient-to-b"], .theme-dark [class*="bg-gradient-to-r"] { background-image: none !important; }
 .theme-dark h1 span { color: #63b0f5 !important; -webkit-text-fill-color: #63b0f5 !important; background: none !important; }
-.theme-dark .relative.w-full.aspect-square.max-w-md { filter: hue-rotate(-82deg) saturate(.72) brightness(1.08); }
