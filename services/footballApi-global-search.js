@@ -50,8 +50,11 @@ async function searchMatches(query, date) {
     apiFootball("/teams", { search: q }),
     apiFootball("/leagues", { search: q }),
   ]);
-  const teamIds = teams.slice(0, 5).map((item) => item.team?.id).filter(Boolean);
-  const leagueIds = leagues.slice(0, 3).map((item) => item.league?.id).filter(Boolean);
+  // Search results are supplied by API-Football worldwide. Keep several
+  // matches for broad names, rather than reducing the dashboard to a handful
+  // of famous clubs.
+  const teamIds = teams.map((item) => item.team?.id).filter(Boolean).slice(0, 20);
+  const leagueIds = leagues.map((item) => item.league?.id).filter(Boolean).slice(0, 10);
   const from = date || new Date().toISOString().slice(0, 10);
   const to = date || new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10);
   if (!teamIds.length && !leagueIds.length) return [];
@@ -60,7 +63,11 @@ async function searchMatches(query, date) {
     ...leagueIds.map((league) => apiFootball("/fixtures", { league, season: new Date(from).getUTCFullYear(), timezone: "Europe/Athens" })),
   ];
   const results = await Promise.all(requests);
-  return results.flat().sort((a, b) => new Date(a.fixture?.date || 0) - new Date(b.fixture?.date || 0));
+  const unique = new Map();
+  results.flat().forEach((fixture) => {
+    if (fixture?.fixture?.id != null) unique.set(String(fixture.fixture.id), fixture);
+  });
+  return Array.from(unique.values()).sort((a, b) => new Date(a.fixture?.date || 0) - new Date(b.fixture?.date || 0));
 }
 
 async function matchDetails(fixtureId) {

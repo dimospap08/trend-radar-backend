@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const { upcomingMatches, searchCatalog, matchesForSelection, matchDetails } = require("../services/footballApi-global-search");
+const { upcomingMatches, searchMatches, matchesForSelection, matchDetails } = require("../services/footballApi-global-search");
 
 router.get("/matches", async (req, res) => {
   try {
@@ -16,10 +16,13 @@ router.get("/matches", async (req, res) => {
 
 router.get("/search", async (req, res) => {
   try {
-    const catalog = await searchCatalog(req.query.q);
-    res.json({ updated_at: new Date().toISOString(), ...catalog });
+    // Return fixtures for any matching team or competition worldwide.
+    // The previous response only returned a catalog (teams/leagues), while
+    // the dashboard expects a `matches` array.
+    const matches = await searchMatches(req.query.q, req.query.date);
+    res.json({ updated_at: new Date().toISOString(), matches });
   } catch (error) {
-    console.error("Football catalog search failed:", error.message);
+    console.error("Football search failed:", error.message);
     res.status(502).json({ error: "Could not search football leagues and teams" });
   }
 });
