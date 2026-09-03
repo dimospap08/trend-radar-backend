@@ -204,7 +204,7 @@ function RadarCore({ trends }) {
       >
         <div
           className="absolute inset-0 rounded-full blur-3xl opacity-40"
-          style={{ background: "radial-gradient(circle, #7c5cff 0%, transparent 70%)" }}
+          style={{ background: "radial-gradient(circle, #124b78 0%, transparent 70%)" }}
         />
         <div
           className="relative w-full h-full transition-transform duration-200 ease-out"
@@ -219,10 +219,10 @@ function RadarCore({ trends }) {
               className="absolute rounded-full border"
               style={{
                 inset: `${ring * 12}%`,
-                borderColor: ring === 0 ? "rgba(124,92,255,0.55)" : "rgba(124,92,255,0.18)",
+                borderColor: ring === 0 ? "rgba(74,170,239,0.7)" : "rgba(50,126,184,0.3)",
                 borderWidth: ring === 0 ? 1.5 : 1,
                 transform: `translateZ(${ring * 6}px)`,
-                boxShadow: ring === 0 ? "0 0 40px rgba(124,92,255,0.25) inset" : "none",
+                boxShadow: ring === 0 ? "0 0 40px rgba(35,139,211,0.28) inset" : "none",
               }}
             />
           ))}
@@ -230,8 +230,8 @@ function RadarCore({ trends }) {
             className="absolute rounded-full"
             style={{
               inset: "48%",
-              background: "radial-gradient(circle, #e6dcff 0%, #7c5cff 60%, transparent 100%)",
-              boxShadow: "0 0 30px 6px rgba(124,92,255,0.7)",
+              background: "radial-gradient(circle, #d8f0ff 0%, #238bd3 60%, transparent 100%)",
+              boxShadow: "0 0 30px 6px rgba(35,139,211,0.7)",
               transform: "translateZ(30px)",
             }}
           />
@@ -242,7 +242,7 @@ function RadarCore({ trends }) {
             <div
               className="absolute top-1/2 left-1/2 w-1/2 h-1/2 origin-top-left"
               style={{
-                background: "conic-gradient(from 0deg, rgba(124,92,255,0.5), transparent 55%)",
+                background: "conic-gradient(from 0deg, rgba(35,139,211,0.55), transparent 55%)",
               }}
             />
           </div>
@@ -266,8 +266,8 @@ function RadarCore({ trends }) {
                   style={{
                     width: b.size * 2,
                     height: b.size * 2,
-                    background: lit ? "#f0e9ff" : "#7c5cff",
-                    boxShadow: lit ? "0 0 14px 4px rgba(124,92,255,0.9)" : "0 0 6px rgba(124,92,255,0.5)",
+                    background: lit ? "#e6f6ff" : "#4aaaf0",
+                    boxShadow: lit ? "0 0 14px 4px rgba(74,170,239,0.9)" : "0 0 6px rgba(35,139,211,0.55)",
                     opacity: lit ? 1 : 0.65,
                   }}
                 />
@@ -283,7 +283,7 @@ function RadarCore({ trends }) {
         </div>
         <div
           className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-3/4 h-8 rounded-full blur-2xl"
-          style={{ background: "rgba(124,92,255,0.35)" }}
+          style={{ background: "rgba(18,75,120,0.45)" }}
         />
       </div>
 
