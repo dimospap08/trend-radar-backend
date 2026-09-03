@@ -16,7 +16,35 @@ const app = express();
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 app.locals.pool = pool;
 
-app.use(cors()); // allow the frontend (different domain) to call this API
+const allowedOrigins = new Set([
+  "https://trendradarpro.com",
+  "https://www.trendradarpro.com",
+  ...(process.env.ALLOWED_ORIGINS || "").split(",").map((origin) => origin.trim()).filter(Boolean),
+]);
+
+app.use((req, res, next) => {
+  res.setHeader("X-Content-Type-Options", "nosniff");
+  res.setHeader("X-Frame-Options", "DENY");
+  res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
+  res.setHeader("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
+  next();
+});
+
+app.use(cors({
+  origin(origin, callback) {
+    if (!origin || allowedOrigins.has(origin) || process.env.NODE_ENV !== "production") return callback(null, true);
+    return callback(new Error("Origin is not allowed"));
+  },
+  methods: ["GET", "POST", "DELETE"],
+  allowedHeaders: ["Content-Type", "Authorization", "Stripe-Signature"],
+}));
+
+async function ensureTrendSchema() {
+  await pool.query("ALTER TABLE trends ADD COLUMN IF NOT EXISTS description TEXT");
+  await pool.query("ALTER TABLE trends ADD COLUMN IF NOT EXISTS source_checked_at TIMESTAMPTZ");
+}
+
+ensureTrendSchema().catch((error) => console.error("Trend schema check failed:", error.message));
 
 app.use("/api/billing/webhook", express.raw({ type: "application/json" }));
 app.use(express.json());
@@ -28,8 +56,9 @@ app.use("/api/sports", sportsRoutes);
 app.get("/health", (req, res) => res.json({ ok: true }));
 
 cron.schedule("0 * * * *", async () => {
-  if (!process.env.GEMINI_API_KEY) {
-    console.log("Skipping scheduled trend scan: GEMINI_API_KEY not set");
+  const hasVertexCredentials = Boolean(process.env.GOOGLE_CREDENTIALS_JSON && process.env.GOOGLE_CLOUD_PROJECT);
+  if (!hasVertexCredentials) {
+    console.log("Skipping scheduled trend scan: Google Vertex credentials are not set");
     return;
   }
   try {

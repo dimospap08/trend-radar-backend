@@ -40,11 +40,15 @@ CREATE TABLE trends (
   spark_data    JSONB NOT NULL DEFAULT '[]',
   source_url    TEXT,
   media_url     TEXT,
-  media_type    TEXT NOT NULL DEFAULT 'image'
+  media_type    TEXT NOT NULL DEFAULT 'image',
+  description   TEXT,
+  source_checked_at TIMESTAMPTZ
 );
 ALTER TABLE trends ADD COLUMN IF NOT EXISTS source_url TEXT;
 ALTER TABLE trends ADD COLUMN IF NOT EXISTS media_url TEXT;
 ALTER TABLE trends ADD COLUMN IF NOT EXISTS media_type TEXT NOT NULL DEFAULT 'image';
+ALTER TABLE trends ADD COLUMN IF NOT EXISTS description TEXT;
+ALTER TABLE trends ADD COLUMN IF NOT EXISTS source_checked_at TIMESTAMPTZ;
 CREATE INDEX idx_trends_score ON trends (score DESC);
 CREATE INDEX idx_trends_category ON trends (category);
 

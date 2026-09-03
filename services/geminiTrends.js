@@ -26,8 +26,8 @@ TikTok creators, e-commerce sellers, marketers, crypto investors, meme-coin trad
 Use Google Search to find things that are ACTUALLY gaining fast momentum
 right now (not things that are already fully mainstream/saturated) across
 these categories: ${CATEGORIES.join(", ")}. Keep CryptoCoin, MemeCoin, and CryptoMaker strictly separate: each item belongs to only one of those categories and each must have its own distinct source_url.
-Return at least 10 items for every category and as many as 25 per category whenever reliable current results exist
-(up to roughly 250 items total). A folder should never be filled with invented data just
+Return 12-18 items for every category whenever reliable current results exist.
+A folder should never be filled with invented data just
 to reach the target: if a result cannot be verified, return fewer for that category.
 Do not invent names: every item must be a real entity found in the search results.
 For MemeCoin use a real token/project that currently exists; for CopyTrader use
@@ -110,11 +110,12 @@ async function refreshTrends(pool, _apiKey) {
     const spark = buildSpark(velocity);
     const mediaUrl = safeUrl(item.media_url);
     const mediaType = item.media_type === "video" ? "video" : "image";
+    const description = String(item.description || "").trim().slice(0, 280) || null;
     await pool.query(
-      `INSERT INTO trends (name, category, platform, velocity_pct, score, first_seen_at, spark_data, source_url, media_url, media_type)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+      `INSERT INTO trends (name, category, platform, velocity_pct, score, first_seen_at, spark_data, source_url, media_url, media_type, description, source_checked_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, now())
        ON CONFLICT DO NOTHING`,
-      [item.name, item.category, platform, velocity, score, firstSeenAt, JSON.stringify(spark), sourceUrl, mediaUrl, mediaType]
+      [item.name, item.category, platform, velocity, score, firstSeenAt, JSON.stringify(spark), sourceUrl, mediaUrl, mediaType, description]
     );
     upserted++;
   }
