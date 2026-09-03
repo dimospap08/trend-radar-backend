@@ -19,6 +19,32 @@ async function upcomingMatches(date) {
   return apiFootball("/fixtures", { date: date || new Date().toISOString().slice(0, 10), timezone: "Europe/Athens" });
 }
 
+async function fallbackMatchesForDays(date, days) {
+  const range = dateRange(date, days);
+  const events = [];
+  for (let offset = 0; offset < range.span; offset += 1) {
+    const day = new Date(`${range.from}T00:00:00Z`);
+    day.setUTCDate(day.getUTCDate() + offset);
+    const dayValue = day.toISOString().slice(0, 10);
+    const response = await fetch(`https://www.thesportsdb.com/api/v1/json/3/eventsday.php?d=${dayValue}&s=Soccer`);
+    if (!response.ok) continue;
+    const data = await response.json();
+    (Array.isArray(data?.events) ? data.events : []).forEach((event) => {
+      events.push({
+        fixture: { id: `tsdb-${event.idEvent}`, date: event.strTimestamp || `${event.dateEvent}T${event.strTime || "00:00:00"}Z`, status: { short: event.strStatus || "NS" } },
+        league: { name: event.strLeague || "Football", country: event.strCountry || "Worldwide", logo: event.strLeagueBadge || null },
+        teams: {
+          home: { id: event.idHomeTeam, name: event.strHomeTeam || "Home", logo: event.strHomeTeamBadge || null },
+          away: { id: event.idAwayTeam, name: event.strAwayTeam || "Away", logo: event.strAwayTeamBadge || null },
+        },
+        goals: { home: event.intHomeScore ?? null, away: event.intAwayScore ?? null },
+        _provider: "TheSportsDB fallback",
+      });
+    });
+  }
+  return events.sort((a, b) => new Date(a.fixture.date) - new Date(b.fixture.date));
+}
+
 function dateRange(date, days) {
   const from = date || new Date().toISOString().slice(0, 10);
   const span = Math.min(7, Math.max(1, Number(days) || 1));
@@ -29,17 +55,22 @@ function dateRange(date, days) {
 
 async function matchesForDays(date, days) {
   const range = dateRange(date, days);
-  if (range.span === 1) return upcomingMatches(range.from);
+  try {
+    if (range.span === 1) return await upcomingMatches(range.from);
   // Free API-Football plans reject date queries beyond their small rolling
   // window. `next` is the provider-supported way to request future fixtures.
-  const fixtures = await apiFootball("/fixtures", { next: 100, timezone: "Europe/Athens" });
-  const end = new Date(`${range.to}T23:59:59Z`).getTime();
-  return fixtures
-    .filter((fixture) => {
-      const time = new Date(fixture.fixture?.date || 0).getTime();
-      return Number.isFinite(time) && time <= end;
-    })
-    .sort((a, b) => new Date(a.fixture?.date || 0) - new Date(b.fixture?.date || 0));
+    const fixtures = await apiFootball("/fixtures", { next: 100, timezone: "Europe/Athens" });
+    const end = new Date(`${range.to}T23:59:59Z`).getTime();
+    return fixtures
+      .filter((fixture) => {
+        const time = new Date(fixture.fixture?.date || 0).getTime();
+        return Number.isFinite(time) && time <= end;
+      })
+      .sort((a, b) => new Date(a.fixture?.date || 0) - new Date(b.fixture?.date || 0));
+  } catch (error) {
+    console.warn("Using TheSportsDB football fallback:", error.message);
+    return fallbackMatchesForDays(date, range.span);
+  }
 }
 
 async function searchCatalog(query) {
