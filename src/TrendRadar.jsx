@@ -816,11 +816,11 @@ function MatchAnalytics({ match, loading, details, saved, close, toggleSaved }) 
         .mono { font-family: 'JetBrains Mono', monospace; }
         * { scrollbar-color: #2a2150 #060512; }
         .glass {
-          background: linear-gradient(180deg, rgba(23,18,45,0.7), rgba(15,12,31,0.7));
+          background: #1e2731;
           backdrop-filter: blur(14px);
-          border: 1px solid rgba(124,92,255,0.14);
+          border: 1px solid rgba(99,176,245,0.42);
         }
-        .theme-dark { background: radial-gradient(circle at 72% 12%, #101b4a 0%, #080b24 34%, #060512 78%); color: #f2f5ff; }
+        .theme-dark { background: #1e2731; color: #edf4fb; }
         .theme-light { background: #dff3ff; color: #10213f; }
         .theme-light .glass { background: rgba(239,250,255,.92); border-color: #b7dff2; box-shadow: 0 14px 36px rgba(42,104,160,.10); }
         .theme-light .body-f, .theme-light .mono { color: #405875; }
