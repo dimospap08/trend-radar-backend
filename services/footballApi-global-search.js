@@ -30,19 +30,16 @@ function dateRange(date, days) {
 async function matchesForDays(date, days) {
   const range = dateRange(date, days);
   if (range.span === 1) return upcomingMatches(range.from);
-  // Request each day separately. This works on API-Football plans that do
-  // not return a complete result for a wide `from`/`to` query.
-  const dates = Array.from({ length: range.span }, (_, index) => {
-    const day = new Date(`${range.from}T00:00:00Z`);
-    day.setUTCDate(day.getUTCDate() + index);
-    return day.toISOString().slice(0, 10);
-  });
-  const results = await Promise.all(dates.map((day) => upcomingMatches(day)));
-  const unique = new Map();
-  results.flat().forEach((fixture) => {
-    if (fixture?.fixture?.id != null) unique.set(String(fixture.fixture.id), fixture);
-  });
-  return Array.from(unique.values()).sort((a, b) => new Date(a.fixture?.date || 0) - new Date(b.fixture?.date || 0));
+  // Free API-Football plans reject date queries beyond their small rolling
+  // window. `next` is the provider-supported way to request future fixtures.
+  const fixtures = await apiFootball("/fixtures", { next: 100, timezone: "Europe/Athens" });
+  const end = new Date(`${range.to}T23:59:59Z`).getTime();
+  return fixtures
+    .filter((fixture) => {
+      const time = new Date(fixture.fixture?.date || 0).getTime();
+      return Number.isFinite(time) && time <= end;
+    })
+    .sort((a, b) => new Date(a.fixture?.date || 0) - new Date(b.fixture?.date || 0));
 }
 
 async function searchCatalog(query) {
