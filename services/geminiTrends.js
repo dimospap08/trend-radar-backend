@@ -25,7 +25,7 @@ const PROMPT = `You track emerging viral trends for a "trend radar" product used
 TikTok creators, e-commerce sellers, marketers, crypto investors, meme-coin traders, and crypto builders.
 Use Google Search to find things that are ACTUALLY gaining fast momentum
 right now (not things that are already fully mainstream/saturated) across
-these categories: ${CATEGORIES.join(", ")}. Keep CryptoCoin, MemeCoin, and CryptoMaker strictly separate: each item belongs to only one of those categories and each must have its own distinct source_url.
+these categories: ${CATEGORIES.join(", ")}. Keep CryptoCoin, MemeCoin, and CopyTrader strictly separate: each item belongs to only one of those categories and each must have its own distinct source_url.
 Return 12-18 items for every category whenever reliable current results exist.
 A folder should never be filled with invented data just
 to reach the target: if a result cannot be verified, return fewer for that category.

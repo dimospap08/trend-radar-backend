@@ -49,6 +49,18 @@ ensureTrendSchema().catch((error) => console.error("Trend schema check failed:",
 app.use("/api/billing/webhook", express.raw({ type: "application/json" }));
 app.use(express.json());
 
+const trendRequests = new Map();
+app.use("/api/trends", (req, res, next) => {
+  const key = req.ip || "unknown";
+  const now = Date.now();
+  const record = trendRequests.get(key) || { startedAt: now, count: 0 };
+  if (now - record.startedAt > 60_000) { record.startedAt = now; record.count = 0; }
+  record.count += 1;
+  trendRequests.set(key, record);
+  if (record.count > 90) return res.status(429).json({ error: "Too many requests. Please try again shortly." });
+  return next();
+});
+
 app.use("/api/trends", trendsRoutes);
 app.use("/api/billing", billingRoutes);
 app.use("/api/sports", sportsRoutes);

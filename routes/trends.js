@@ -6,6 +6,13 @@ const { requireUser } = require("../services/auth");
 
 const TIER_LIMITS = { free: 3, pro: Infinity, investor: Infinity, signal: Infinity, signalplus: Infinity };
 
+function requireRefreshSecret(req, res, next) {
+  const expected = process.env.TREND_REFRESH_SECRET;
+  const received = req.get("x-trend-refresh-secret");
+  if (!expected || !received || received !== expected) return res.status(404).json({ error: "Not found" });
+  return next();
+}
+
 function normalizeTier(value) {
   return String(value || "free").trim().toLowerCase().replace(/[+\s]/g, "");
 }
@@ -141,7 +148,7 @@ router.post("/:id/watch", requireUser, async (req, res) => {
   res.json({ watching: true });
 });
 
-router.post("/refresh", async (req, res) => {
+router.post("/refresh", requireRefreshSecret, async (req, res) => {
   const { pool } = req.app.locals;
   try {
     const result = await refreshTrends(pool, process.env.GEMINI_API_KEY);
@@ -152,7 +159,7 @@ router.post("/refresh", async (req, res) => {
   }
 });
 
-router.post("/refresh-free", async (req, res) => {
+router.post("/refresh-free", requireRefreshSecret, async (req, res) => {
   const { pool } = req.app.locals;
   try {
     const result = await persistFreeSignals(pool);
