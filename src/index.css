@@ -15,3 +15,7 @@ html, body { margin: 0; padding: 0; }
 .theme-dark button.bg-gradient-to-r, .theme-dark a.bg-gradient-to-r { background: #63b0f5 !important; color: #1e2731 !important; box-shadow: none !important; }
 .theme-dark [class*="bg-gradient-to-br"], .theme-dark [class*="bg-gradient-to-b"], .theme-dark [class*="bg-gradient-to-r"] { background-image: none !important; }
 .theme-dark h1 span { color: #63b0f5 !important; -webkit-text-fill-color: #63b0f5 !important; background: none !important; }
+.theme-dark .screener-feed .glass.rounded-2xl.p-4 { background: linear-gradient(180deg, rgba(23,18,45,.82), rgba(15,12,31,.82)) !important; border-color: rgba(124,92,255,.25) !important; }
+.theme-dark .screener-feed .relative.rounded-2xl.border { background: #202c38 !important; border-color: rgba(99,176,245,.38) !important; }
+.theme-dark .screener-feed .text-\[\#a99fd4\], .theme-dark .screener-feed .text-\[\#b3a9d9\], .theme-dark .screener-feed .text-\[\#c9bfff\] { color: #9fcdf2 !important; }
+.theme-dark .text-\[\#7c5cff\], .theme-dark .text-\[\#a98bff\], .theme-dark .text-\[\#c084fc\] { color: #63b0f5 !important; }
