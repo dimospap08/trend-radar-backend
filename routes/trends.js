@@ -13,7 +13,7 @@ const CATEGORY_SOURCE_SEARCH = {
   Product: "https://www.amazon.com/s?k=",
   CryptoCoin: "https://www.coingecko.com/en/search?query=",
   MemeCoin: "https://dexscreener.com/search?q=",
-  CryptoMaker: "https://www.google.com/search?q=",
+  CopyTrader: "https://www.google.com/search?q=",
   GlobalMarket: "https://www.google.com/search?q=",
 };
 
@@ -42,7 +42,7 @@ router.get("/", async (req, res) => {
       marketer: ["Hashtag", "Format", "Aesthetic"],
       coins: ["CryptoCoin"],
       memecoins: ["MemeCoin"],
-      "crypto-makers": ["CryptoMaker"],
+      "copy-trading": ["CopyTrader"],
     };
 
     let effectiveTier = "free";
@@ -59,7 +59,7 @@ router.get("/", async (req, res) => {
     }
   }
     const categories = ["pro", "investor", "signal", "signalplus"].includes(effectiveTier)
-      ? ["Sound", "Hashtag", "Format", "Product", "Aesthetic", "Narrative", "CryptoCoin", "MemeCoin", "CryptoMaker", "GlobalMarket"]
+      ? ["Sound", "Hashtag", "Format", "Product", "Aesthetic", "Narrative", "CryptoCoin", "MemeCoin", "CopyTrader", "GlobalMarket"]
       : (CATEGORY_BY_PERSONA[persona] || CATEGORY_BY_PERSONA.creator);
     const { rows } = await pool.query(
       `WITH ranked AS (

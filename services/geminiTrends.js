@@ -18,9 +18,9 @@ if (process.env.GOOGLE_CREDENTIALS_JSON && !process.env.GOOGLE_APPLICATION_CREDE
 }
 
 const GEMINI_MODEL = "gemini-2.5-flash";
-const CATEGORIES = ["Sound", "Hashtag", "Format", "Product", "Aesthetic", "Narrative", "CryptoCoin", "MemeCoin", "CryptoMaker", "GlobalMarket"];
+const CATEGORIES = ["Sound", "Hashtag", "Format", "Product", "Aesthetic", "Narrative", "CryptoCoin", "MemeCoin", "CopyTrader", "GlobalMarket"];
 const PLATFORMS = ["TikTok", "Instagram Reels", "X", "YouTube Shorts", "Telegram"];
-const SOURCE_REQUIRED_CATEGORIES = new Set(["Product", "CryptoCoin", "MemeCoin", "CryptoMaker", "GlobalMarket"]);
+const SOURCE_REQUIRED_CATEGORIES = new Set(["Product", "CryptoCoin", "MemeCoin", "CopyTrader", "GlobalMarket"]);
 const PROMPT = `You track emerging viral trends for a "trend radar" product used by
 TikTok creators, e-commerce sellers, marketers, crypto investors, meme-coin traders, and crypto builders.
 Use Google Search to find things that are ACTUALLY gaining fast momentum
@@ -30,9 +30,11 @@ Return at least 10 items for every category whenever reliable current results ex
 (roughly 100 items total). A folder should never be filled with invented data just
 to reach the target: if a result cannot be verified, return fewer for that category.
 Do not invent names: every item must be a real entity found in the search results.
-For MemeCoin use a real token/project that currently exists; for CryptoMaker use
-a real protocol, company, open-source repository or developer tool; for Product
-use a real product listing. If a category has no reliable result, return fewer
+For MemeCoin use a real token/project that currently exists; for CopyTrader use
+a real, currently active public trader profile on a copy-trading platform (such
+as eToro, Binance, Bybit, Bitget or a comparable service), including performance,
+drawdown and follower metrics when published; for Product use a real product
+listing. If a category has no reliable result, return fewer
 items for that category rather than fabricating one. For each item return:
 - name: short human-readable name
 - category: one of ${CATEGORIES.join(", ")}
@@ -44,7 +46,7 @@ items for that category rather than fabricating one. For each item return:
 - media_url: a direct public image/video URL only if reliably available; otherwise null, never invent URLs
 - media_type: "image" or "video"
 - description: one short sentence explaining what this is and why it matters now
-- source_url is mandatory for Product, CryptoCoin, MemeCoin, CryptoMaker and GlobalMarket; skip an item in those categories when no reliable source was found
+- source_url is mandatory for Product, CryptoCoin, MemeCoin, CopyTrader and GlobalMarket; skip an item in those categories when no reliable source was found
 - media_url is optional and must never be invented
 Respond with ONLY a JSON array, no markdown, no commentary. Example shape:
 [{"name":"...", "category":"Sound", "platform":"TikTok", "velocity_pct":120, "first_seen_hours_ago":18, "source_url":"https://...", "media_url":"https://...", "media_type":"image", "description":"..."}]`;
