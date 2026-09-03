@@ -1256,7 +1256,7 @@ function MatchAnalytics({ match, loading, details, saved, close, toggleSaved }) 
           ].map((plan) => (
             <div
               key={plan.id}
-              className={`rounded-2xl p-7 relative ${
+              className={`plan-card rounded-2xl p-7 relative ${plan.highlight ? "plan-pro" : "plan-signal"} ${
                 plan.highlight
                   ? "border border-[#7c5cff] bg-gradient-to-b from-[#1c1440] to-[#130f26] shadow-[0_0_40px_rgba(124,92,255,0.15)]"
                   : "glass"
