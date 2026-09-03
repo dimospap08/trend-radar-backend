@@ -70,9 +70,9 @@ router.get("/", async (req, res) => {
        )
        SELECT id, name, category, platform, velocity_pct, score, first_seen_at, spark_data, source_url, media_url, media_type
        FROM ranked
-       WHERE category_rank <= 10
+       WHERE category_rank <= 25
        ORDER BY score DESC
-       LIMIT 100`,
+       LIMIT 250`,
       [categories]
     );
 
