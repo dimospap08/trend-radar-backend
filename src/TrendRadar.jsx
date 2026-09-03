@@ -595,9 +595,9 @@ export default function TrendRadar() {
   useEffect(() => {
     let cancelled = false;
     setFootballLoading(true);
-    fetch(`${API_BASE}/api/sports/matches`)
+    fetch(`${API_BASE}/api/sports/matches?days=7`)
       .then((response) => response.json())
-      .then((data) => { if (!cancelled) setFootballMatches(Array.isArray(data?.matches) ? data.matches.slice(0, 12) : []); })
+      .then((data) => { if (!cancelled) setFootballMatches(Array.isArray(data?.matches) ? data.matches : []); })
       .catch(() => { if (!cancelled) setFootballMatches([]); })
       .finally(() => { if (!cancelled) setFootballLoading(false); });
     return () => { cancelled = true; };
