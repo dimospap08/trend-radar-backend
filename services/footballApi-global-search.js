@@ -19,6 +19,20 @@ async function upcomingMatches(date) {
   return apiFootball("/fixtures", { date: date || new Date().toISOString().slice(0, 10), timezone: "Europe/Athens" });
 }
 
+function dateRange(date, days) {
+  const from = date || new Date().toISOString().slice(0, 10);
+  const span = Math.min(7, Math.max(1, Number(days) || 1));
+  const end = new Date(`${from}T00:00:00Z`);
+  end.setUTCDate(end.getUTCDate() + span - 1);
+  return { from, to: end.toISOString().slice(0, 10), span };
+}
+
+async function matchesForDays(date, days) {
+  const range = dateRange(date, days);
+  if (range.span === 1) return upcomingMatches(range.from);
+  return apiFootball("/fixtures", { from: range.from, to: range.to, timezone: "Europe/Athens" });
+}
+
 async function searchCatalog(query) {
   const q = String(query || "").trim();
   if (!q) return { teams: [], leagues: [] };
@@ -32,9 +46,8 @@ async function searchCatalog(query) {
   };
 }
 
-async function matchesForSelection({ team, league, date }) {
-  const from = date || new Date().toISOString().slice(0, 10);
-  const to = date || new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10);
+async function matchesForSelection({ team, league, date, days }) {
+  const { from, to } = dateRange(date, days || 7);
   const requests = [];
   if (team) requests.push(apiFootball("/fixtures", { team, from, to, timezone: "Europe/Athens" }));
   if (league) requests.push(apiFootball("/fixtures", { league, season: new Date(from).getUTCFullYear(), from, to, timezone: "Europe/Athens" }));
@@ -43,7 +56,7 @@ async function matchesForSelection({ team, league, date }) {
   return results.flat().sort((a, b) => new Date(a.fixture?.date || 0) - new Date(b.fixture?.date || 0));
 }
 
-async function searchMatches(query, date) {
+async function searchMatches(query, date, days) {
   const q = String(query || "").trim();
   if (!q) return [];
   const [teams, leagues] = await Promise.all([
@@ -55,8 +68,7 @@ async function searchMatches(query, date) {
   // of famous clubs.
   const teamIds = teams.map((item) => item.team?.id).filter(Boolean).slice(0, 20);
   const leagueIds = leagues.map((item) => item.league?.id).filter(Boolean).slice(0, 10);
-  const from = date || new Date().toISOString().slice(0, 10);
-  const to = date || new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10);
+  const { from, to } = dateRange(date, days || 7);
   if (!teamIds.length && !leagueIds.length) return [];
   const requests = [
     ...teamIds.map((team) => apiFootball("/fixtures", { team, from, to, timezone: "Europe/Athens" })),
@@ -80,4 +92,4 @@ async function matchDetails(fixtureId) {
   return { fixture: fixtures[0] || null, statistics, odds, predictions: predictions[0] || null };
 }
 
-module.exports = { upcomingMatches, searchCatalog, matchesForSelection, searchMatches, matchDetails };
+module.exports = { upcomingMatches, matchesForDays, searchCatalog, matchesForSelection, searchMatches, matchDetails };
