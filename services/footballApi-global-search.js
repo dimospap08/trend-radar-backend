@@ -29,7 +29,8 @@ function dateRange(date, days) {
 
 async function matchesForDays(date, days) {
   const range = dateRange(date, days);
-  if (range.span === 1) return upcomingMatches(range.from);
+  // Use the same inclusive range request for one day and for a full week.
+  // This keeps the behaviour consistent when the user changes the selector.
   return apiFootball("/fixtures", { from: range.from, to: range.to, timezone: "Europe/Athens" });
 }
 
