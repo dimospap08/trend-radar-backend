@@ -123,6 +123,22 @@ async function searchMatches(query, date, days) {
 }
 
 async function matchDetails(fixtureId) {
+  if (String(fixtureId).startsWith("tsdb-")) {
+    const eventId = String(fixtureId).slice(5);
+    const response = await fetch(`https://www.thesportsdb.com/api/v1/json/3/lookupevent.php?id=${encodeURIComponent(eventId)}`);
+    const data = response.ok ? await response.json() : null;
+    const event = data?.events?.[0];
+    if (!event) return { fixture: null, statistics: [], odds: [], predictions: null };
+    return {
+      fixture: {
+        fixture: { id: fixtureId, date: event.strTimestamp || `${event.dateEvent}T${event.strTime || "00:00:00"}Z`, status: { short: event.strStatus || "NS" } },
+        league: { name: event.strLeague || "Football", country: event.strCountry || "Worldwide" },
+        teams: { home: { name: event.strHomeTeam || "Home", logo: event.strHomeTeamBadge || null }, away: { name: event.strAwayTeam || "Away", logo: event.strAwayTeamBadge || null } },
+        goals: { home: event.intHomeScore ?? null, away: event.intAwayScore ?? null },
+      },
+      statistics: [], odds: [], predictions: null,
+    };
+  }
   const [fixtures, statistics, odds, predictions] = await Promise.all([
     apiFootball("/fixtures", { id: fixtureId }),
     apiFootball("/fixtures/statistics", { fixture: fixtureId }),
