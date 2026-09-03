@@ -29,10 +29,20 @@ function dateRange(date, days) {
 
 async function matchesForDays(date, days) {
   const range = dateRange(date, days);
-  // API-Football is most reliable with its dedicated `date` query for a
-  // single day. Keep the wider `from`/`to` query for the 3- and 7-day views.
   if (range.span === 1) return upcomingMatches(range.from);
-  return apiFootball("/fixtures", { from: range.from, to: range.to, timezone: "Europe/Athens" });
+  // Request each day separately. This works on API-Football plans that do
+  // not return a complete result for a wide `from`/`to` query.
+  const dates = Array.from({ length: range.span }, (_, index) => {
+    const day = new Date(`${range.from}T00:00:00Z`);
+    day.setUTCDate(day.getUTCDate() + index);
+    return day.toISOString().slice(0, 10);
+  });
+  const results = await Promise.all(dates.map((day) => upcomingMatches(day)));
+  const unique = new Map();
+  results.flat().forEach((fixture) => {
+    if (fixture?.fixture?.id != null) unique.set(String(fixture.fixture.id), fixture);
+  });
+  return Array.from(unique.values()).sort((a, b) => new Date(a.fixture?.date || 0) - new Date(b.fixture?.date || 0));
 }
 
 async function searchCatalog(query) {
