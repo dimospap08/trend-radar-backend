@@ -18,7 +18,7 @@ if (process.env.GOOGLE_CREDENTIALS_JSON && !process.env.GOOGLE_APPLICATION_CREDE
 }
 
 const GEMINI_MODEL = "gemini-2.5-flash";
-const CATEGORIES = ["Sound", "Hashtag", "Format", "Product", "Aesthetic", "Coin", "Narrative", "CryptoCoin", "MemeCoin", "CryptoMaker"];
+const CATEGORIES = ["Sound", "Hashtag", "Format", "Product", "Aesthetic", "Narrative", "CryptoCoin", "MemeCoin", "CryptoMaker", "GlobalMarket"];
 const PLATFORMS = ["TikTok", "Instagram Reels", "X", "YouTube Shorts", "Telegram"];
 const PROMPT = `You track emerging viral trends for a "trend radar" product used by
 TikTok creators, e-commerce sellers, marketers, crypto investors, meme-coin traders, and crypto builders.

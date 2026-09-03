@@ -14,6 +14,7 @@ const CATEGORY_SOURCE_SEARCH = {
   CryptoCoin: "https://www.coingecko.com/en/search?query=",
   MemeCoin: "https://dexscreener.com/search?q=",
   CryptoMaker: "https://www.google.com/search?q=",
+  GlobalMarket: "https://www.google.com/search?q=",
 };
 
 function uniqueSourceUrl(row, usedUrls) {
@@ -36,9 +37,9 @@ router.get("/", async (req, res) => {
     const persona = req.query.persona || "creator";
     const tier = normalizeTier(req.query.tier || "free");
     const CATEGORY_BY_PERSONA = {
-      creator: ["Sound", "Hashtag", "Format", "Topic", "News"],
-      store: ["Product", "Aesthetic", "Hashtag", "Topic", "News"],
-      marketer: ["Hashtag", "Format", "Aesthetic", "Topic", "News"],
+      creator: ["Sound", "Hashtag", "Format"],
+      store: ["Product", "Aesthetic", "Hashtag"],
+      marketer: ["Hashtag", "Format", "Aesthetic"],
       coins: ["CryptoCoin"],
       memecoins: ["MemeCoin"],
       "crypto-makers": ["CryptoMaker"],
@@ -58,7 +59,7 @@ router.get("/", async (req, res) => {
     }
   }
     const categories = ["pro", "investor", "signal", "signalplus"].includes(effectiveTier)
-      ? ["Sound", "Hashtag", "Format", "Product", "Aesthetic", "Coin", "Narrative", "CryptoCoin", "MemeCoin", "CryptoMaker", "Topic", "News"]
+      ? ["Sound", "Hashtag", "Format", "Product", "Aesthetic", "Narrative", "CryptoCoin", "MemeCoin", "CryptoMaker", "GlobalMarket"]
       : (CATEGORY_BY_PERSONA[persona] || CATEGORY_BY_PERSONA.creator);
     const { rows } = await pool.query(
       `SELECT id, name, category, platform, velocity_pct, score, first_seen_at, spark_data, source_url, media_url, media_type
