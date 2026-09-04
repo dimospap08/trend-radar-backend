@@ -19,6 +19,9 @@ app.locals.pool = pool;
 const allowedOrigins = new Set([
   "https://trendradarpro.com",
   "https://www.trendradarpro.com",
+  "https://trend-radar-dun-six.vercel.app",
+  "https://trend-radar-dimospapadopoulos08-7795s-projects.vercel.app",
+  "https://trend-radar-git-main-dimospapadopoulos08-7795s-projects.vercel.app",
   ...(process.env.ALLOWED_ORIGINS || "").split(",").map((origin) => origin.trim()).filter(Boolean),
 ]);
 
@@ -32,7 +35,8 @@ app.use((req, res, next) => {
 
 app.use(cors({
   origin(origin, callback) {
-    if (!origin || allowedOrigins.has(origin) || process.env.NODE_ENV !== "production") return callback(null, true);
+    const vercelPreview = /^https:\/\/trend-radar(?:-[a-z0-9]+)?(?:-[a-z0-9-]+)?\.vercel\.app$/i.test(origin || "");
+    if (!origin || allowedOrigins.has(origin) || vercelPreview || process.env.NODE_ENV !== "production") return callback(null, true);
     return callback(new Error("Origin is not allowed"));
   },
   methods: ["GET", "POST", "DELETE"],
