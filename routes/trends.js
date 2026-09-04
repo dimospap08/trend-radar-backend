@@ -47,6 +47,7 @@ router.get("/", async (req, res) => {
       creator: ["Sound", "Hashtag", "Format"],
       store: ["Product", "Aesthetic", "Hashtag"],
       marketer: ["Hashtag", "Format", "Aesthetic"],
+      investor: ["CryptoCoin", "MemeCoin", "Narrative", "CopyTrader", "GlobalMarket"],
       coins: ["CryptoCoin"],
       memecoins: ["MemeCoin"],
       "copy-trading": ["CopyTrader"],
